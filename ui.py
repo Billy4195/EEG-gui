@@ -14,46 +14,46 @@ class EEG_Application(QtGui.QApplication):
         self.setupUi()
 
     def setupUi(self):
+        """Create Basic UI layout"""
         self.main_win.setObjectName("MainWindow")
+        self.main_win.setWindowTitle("EEG")
         self.main_win.resize(1800, 1000)
-        self.centralwidget = QtWidgets.QWidget(self.main_win)
-        self.centralwidget.setObjectName("centralwidget")
+
         dockarea = DockArea()
 
-        raw_data_dock = Dock("Raw data plot")
-        self.dtypeCombo = QtWidgets.QComboBox(self.centralwidget)
-        self.dtypeCombo.setObjectName("dtypeCombo")
-        self.dtypeCombo.addItem("")
-        self.dtypeCombo.addItem("")
-        self.dtypeCombo.addItem("")
-        self.plot = pg.PlotWidget()
-        self.plot.setMouseEnabled(x= False, y= True)
-        raw_data_dock.addWidget(self.plot, 1, 0, 2, 2)
-        raw_data_dock.addWidget(self.dtypeCombo, 0, 0, 1, 1)
-
+        raw_data_dock = self.create_raw_data_dock()
         dockarea.addDock(raw_data_dock)
+
         left_bottom_dock = self.create_dummy_dock('Left bottom')
         dockarea.addDock(left_bottom_dock,'bottom',raw_data_dock)
+
         mid_top_dock = self.create_dummy_dock('Mid top')
         dockarea.addDock(mid_top_dock,'right',raw_data_dock)
+
         mid_bottom_dock = self.create_dummy_dock("Mid bottom")
         dockarea.addDock(mid_bottom_dock,'right',left_bottom_dock)
+
         right_top_dock = self.create_dummy_dock("Right top")
         dockarea.addDock(right_top_dock,'right',mid_top_dock)
+
         right_bottom_dock = self.create_dummy_dock("Right bottom")
         dockarea.addDock(right_bottom_dock,'right',mid_bottom_dock)
 
         self.main_win.setCentralWidget(dockarea)
-
-        self.retranslateUi()
         QtCore.QMetaObject.connectSlotsByName(self.main_win)
 
-    def retranslateUi(self):
-        _translate = QtCore.QCoreApplication.translate
-        self.main_win.setWindowTitle(_translate("MainWindow", "EEG"))
-        self.dtypeCombo.setItemText(0, _translate("MainWindow", "125"))
-        self.dtypeCombo.setItemText(1, _translate("MainWindow", "500"))
-        self.dtypeCombo.setItemText(2, _translate("MainWindow", "1000"))
+    def create_raw_data_dock(self):
+        raw_data_dock = Dock("Raw data plot")
+        self.dtypeCombo = QtWidgets.QComboBox()
+        self.dtypeCombo.setObjectName("dtypeCombo")
+        self.dtypeCombo.addItem("125")
+        self.dtypeCombo.addItem("500")
+        self.dtypeCombo.addItem("1000")
+        self.plot = pg.PlotWidget()
+        self.plot.setMouseEnabled(x= False, y= True)
+        raw_data_dock.addWidget(self.dtypeCombo, 0, 0, 1, 1)
+        raw_data_dock.addWidget(self.plot, 1, 0, 2, 2)
+        return raw_data_dock
 
     def create_dummy_dock(self,title="Dummy"):
         dummy_dock = Dock(title)
