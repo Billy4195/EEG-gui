@@ -41,13 +41,15 @@ const generateJSON = () => {
     };
 };
 ////////////////////////////////////
+setInterval(() => {
+    factor += 0.1;
+}, 10);
 
 wsServer.on("request", (request) => {
     var connection = request.accept(null, request.origin); 
     console.log("[Connection] new client connected.");
 
     setInterval(() => {
-        factor += 0.1;
         connection.sendUTF(JSON.stringify(generateJSON()));
     }, clock);
     
