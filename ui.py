@@ -4,6 +4,9 @@ import pyqtgraph as pg
 from pyqtgraph.dockarea import *
 from PyQt5 import QtCore, QtGui, QtWidgets
 import numpy as np
+import time
+import config
+import wsSetup
 
 class EEG_Application(QtGui.QApplication):
     def __init__(self):
@@ -11,6 +14,8 @@ class EEG_Application(QtGui.QApplication):
         self.main_win = QtGui.QMainWindow()
         self.main_win.show()
 
+        config.init()
+        wsSetup.connect() 
         self.setupUi()
 
     def setupUi(self):
@@ -53,6 +58,25 @@ class EEG_Application(QtGui.QApplication):
         self.plot.setMouseEnabled(x= False, y= True)
         raw_data_dock.addWidget(self.dtypeCombo, 0, 0, 1, 1)
         raw_data_dock.addWidget(self.plot, 1, 0, 2, 2)
+        
+        self.cursor = pg.InfiniteLine(pos=0)
+        self.plot.addItem(self.cursor)
+
+        self.curves = list()
+
+        for i in range(64):
+            r = (i + 60 ) * 5 % 256
+            g = (i + 2 ) * 7 % 256
+            b = (i + 15 ) * 11 % 256
+            curve = self.plot.plot(pen=(r,g,b))
+            curve.setData(config.rawList[i])
+            self.curves.append(curve)
+        
+        self.timer = QtCore.QTimer()
+        self.timer.setInterval(100)
+        self.timer.timeout.connect(self.update_raw_plot)
+        self.timer.start()
+
         return raw_data_dock
 
     def create_dummy_dock(self,title="Dummy"):
@@ -61,3 +85,10 @@ class EEG_Application(QtGui.QApplication):
         w3.plot(np.random.normal(size=100))
         dummy_dock.addWidget(w3)
         return dummy_dock
+
+    def update_raw_plot(self):
+        tol_start = time.time()
+        for i in range(64):
+            self.curves[i].setData(config.rawList[i])
+        self.plot.setTitle("FPS: {:.1f}".format(1/(time.time()-tol_start)))
+        self.cursor.setValue(config.currentIndex)
