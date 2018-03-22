@@ -6,7 +6,8 @@ import config
 def on_message(ws, message):
     raw = json.loads(message)  
     for i in range(config.CH):
-        config.rawList[i][config.currentIndex] = raw['data']['eeg'][i] + i * 10 
+        config.rawList[i].append(raw['data']['eeg'][i] + i * 10)
+        config.rawList[i].pop(0)
     
     if config.currentIndex < config.HZ * config.DURATION - 1:
         config.currentIndex += 1
