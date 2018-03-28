@@ -65,6 +65,14 @@ class EEG_Application(QtGui.QApplication):
         self.cursor = pg.InfiniteLine(pos=0)
         self.plot.addItem(self.cursor)
 
+        for i in range(64):
+            self.zeroBaseLine = pg.InfiniteLine(pos=i*10, angle=180, pen=(128, 128, 128))
+            self.negBaseLine = pg.InfiniteLine(pos=i*10 - 3, angle=180, pen=pg.mkPen(color=(80, 80, 80), style=QtCore.Qt.DotLine))
+            self.posBaseLine = pg.InfiniteLine(pos=i*10 + 3, angle=180, pen=pg.mkPen(color=(80, 80, 80), style=QtCore.Qt.DotLine))
+            self.plot.addItem(self.zeroBaseLine)
+            self.plot.addItem(self.negBaseLine)
+            self.plot.addItem(self.posBaseLine)
+            
         self.curves = list()
 
         for i in range(64):
