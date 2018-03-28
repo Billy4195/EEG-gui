@@ -49,6 +49,8 @@ class EEG_Application(QtGui.QApplication):
 
     def create_raw_data_dock(self):
         raw_data_dock = Dock("Raw data plot")
+        self.raw_data_mode = "Scan"
+        self.mode_btn = QtGui.QPushButton("Change to Scroll Mode")
         self.dtypeCombo = QtWidgets.QComboBox()
         self.dtypeCombo.setObjectName("dtypeCombo")
         self.dtypeCombo.addItem("125")
@@ -56,9 +58,10 @@ class EEG_Application(QtGui.QApplication):
         self.dtypeCombo.addItem("1000")
         self.plot = pg.PlotWidget()
         self.plot.setMouseEnabled(x= False, y= True)
-        raw_data_dock.addWidget(self.dtypeCombo, 0, 0, 1, 1)
-        raw_data_dock.addWidget(self.plot, 1, 0, 2, 2)
-        
+        raw_data_dock.addWidget(self.mode_btn, 0, 0, 1, 1)
+        raw_data_dock.addWidget(self.dtypeCombo, 0, 1, 1, 1)
+        raw_data_dock.addWidget(self.plot, 1, 0, 4, 4)
+
         self.cursor = pg.InfiniteLine(pos=0)
         self.plot.addItem(self.cursor)
 
@@ -76,6 +79,7 @@ class EEG_Application(QtGui.QApplication):
         self.timer.setInterval(100)
         self.timer.timeout.connect(self.update_raw_plot)
         self.timer.start()
+        self.mode_btn.clicked.connect(self.raw_data_mode_handler)
 
         return raw_data_dock
 
@@ -89,6 +93,20 @@ class EEG_Application(QtGui.QApplication):
     def update_raw_plot(self):
         tol_start = time.time()
         for i in range(64):
-            self.curves[i].setData(config.rawList[i])
+            if self.raw_data_mode == "Scan":
+                self.curves[i].setData(config.rawList[i][-config.currentIndex:]+config.rawList[i][:-config.currentIndex])
+            elif self.raw_data_mode == "Scroll":
+                self.curves[i].setData(config.rawList[i])
         self.plot.setTitle("FPS: {:.1f}".format(1/(time.time()-tol_start)))
         self.cursor.setValue(config.currentIndex)
+
+    def raw_data_mode_handler(self):
+        if self.raw_data_mode == "Scan":
+            self.raw_data_mode = "Scroll"
+            self.mode_btn.setText("Change to Scan Mode")
+            self.cursor.hide()
+
+        elif self.raw_data_mode == "Scroll":
+            self.raw_data_mode = "Scan"
+            self.mode_btn.setText("Change to Scroll Mode")
+            self.cursor.show()
