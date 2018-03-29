@@ -56,10 +56,12 @@ class EEG_Application(QtGui.QApplication):
         self.dtypeCombo.addItem("125")
         self.dtypeCombo.addItem("500")
         self.dtypeCombo.addItem("1000")
+        self.ch_select_btn = QtGui.QPushButton("Select Channels")
         self.plot = pg.PlotWidget()
         self.plot.setMouseEnabled(x= False, y= True)
         raw_data_dock.addWidget(self.mode_btn, 0, 0, 1, 1)
         raw_data_dock.addWidget(self.dtypeCombo, 0, 1, 1, 1)
+        raw_data_dock.addWidget(self.ch_select_btn, 0, 2, 1, 1)
         raw_data_dock.addWidget(self.plot, 1, 0, 4, 4)
 
         self.cursor = pg.InfiniteLine(pos=0)
@@ -80,7 +82,8 @@ class EEG_Application(QtGui.QApplication):
         self.timer.timeout.connect(self.update_raw_plot)
         self.timer.start()
         self.mode_btn.clicked.connect(self.raw_data_mode_handler)
-
+        self.ch_select_btn.clicked.connect(self.show_channel_select_window)
+        self.selected_channels = list(range(64))
         return raw_data_dock
 
     def create_dummy_dock(self,title="Dummy"):
@@ -93,6 +96,11 @@ class EEG_Application(QtGui.QApplication):
     def update_raw_plot(self):
         tol_start = time.time()
         for i in range(64):
+            if i not in self.selected_channels:
+                self.curves[i].hide()
+                continue
+            else:
+                self.curves[i].show()
             if self.raw_data_mode == "Scan":
                 self.curves[i].setData(config.rawList[i][-config.currentIndex:]+config.rawList[i][:-config.currentIndex])
             elif self.raw_data_mode == "Scroll":
@@ -110,3 +118,38 @@ class EEG_Application(QtGui.QApplication):
             self.raw_data_mode = "Scan"
             self.mode_btn.setText("Change to Scroll Mode")
             self.cursor.show()
+
+    def show_channel_select_window(self):
+        self.channel_selector_win = QtGui.QDialog(self.main_win)
+        self.channel_selector_win.setWindowTitle("Select Channels")
+        self.channel_selector_win.resize(500,400)
+        gridlayout = QtGui.QGridLayout(self.channel_selector_win)
+
+        self.channel_selector = QtGui.QListWidget()
+        self.channel_selector.setSelectionMode(QtGui.QAbstractItemView.MultiSelection)
+        for i in range(64):
+            item = QtGui.QListWidgetItem(self.channel_selector)
+            item.setText("Channel {}".format(i))
+            item.setData(QtCore.Qt.UserRole, i)
+            if i in self.selected_channels:
+                item.setSelected(True)
+
+        channel_selector_button_box = QtGui.QDialogButtonBox(QtCore.Qt.Horizontal,self.channel_selector_win)
+        channel_selector_button_box.addButton("Cancel", QtGui.QDialogButtonBox.RejectRole)
+        channel_selector_button_box.addButton("Select", QtGui.QDialogButtonBox.AcceptRole)
+        select_all_btn = channel_selector_button_box.addButton("Select All", QtGui.QDialogButtonBox.ResetRole)
+        channel_selector_button_box.accepted.connect(self.channel_select_handler)
+        channel_selector_button_box.rejected.connect(self.channel_selector_win.close)
+        select_all_btn.clicked.connect(self.select_all_channels)
+
+        gridlayout.addWidget(self.channel_selector,0,0)
+        gridlayout.addWidget(channel_selector_button_box,1,0)
+        self.channel_selector_win.show()
+
+    def channel_select_handler(self):
+        self.selected_channels = [item.data(QtCore.Qt.UserRole) for item in self.channel_selector.selectedItems()]
+        self.channel_selector_win.close()
+
+    def select_all_channels(self):
+        for idx in range(len(self.channel_selector)):
+            self.channel_selector.item(idx).setSelected(True)
