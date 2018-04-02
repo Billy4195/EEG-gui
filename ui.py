@@ -8,47 +8,13 @@ import time
 import config
 import wsSetup
 
-class EEG_Application(QtGui.QApplication):
+class Raw_Data_Dock(Dock):
     def __init__(self):
-        super().__init__([])
-        self.main_win = QtGui.QMainWindow()
-        self.main_win.show()
+        super().__init__("Raw Data Plot")
 
-        config.init()
-        wsSetup.connect() 
-        self.setupUi()
+        self.init_ui()
 
-    def setupUi(self):
-        """Create Basic UI layout"""
-        self.main_win.setObjectName("MainWindow")
-        self.main_win.setWindowTitle("EEG")
-        self.main_win.resize(1800, 1000)
-
-        dockarea = DockArea()
-
-        raw_data_dock = self.create_raw_data_dock()
-        dockarea.addDock(raw_data_dock)
-
-        left_bottom_dock = self.create_dummy_dock('Left bottom')
-        dockarea.addDock(left_bottom_dock,'bottom',raw_data_dock)
-
-        mid_top_dock = self.create_dummy_dock('Mid top')
-        dockarea.addDock(mid_top_dock,'right',raw_data_dock)
-
-        mid_bottom_dock = self.create_dummy_dock("Mid bottom")
-        dockarea.addDock(mid_bottom_dock,'right',left_bottom_dock)
-
-        right_top_dock = self.create_dummy_dock("Right top")
-        dockarea.addDock(right_top_dock,'right',mid_top_dock)
-
-        right_bottom_dock = self.create_dummy_dock("Right bottom")
-        dockarea.addDock(right_bottom_dock,'right',mid_bottom_dock)
-
-        self.main_win.setCentralWidget(dockarea)
-        QtCore.QMetaObject.connectSlotsByName(self.main_win)
-
-    def create_raw_data_dock(self):
-        raw_data_dock = Dock("Raw data plot")
+    def init_ui(self):
         self.raw_data_mode = "Scan"
         self.mode_btn = QtGui.QPushButton("Change to Scroll Mode")
         self.dtypeCombo = QtWidgets.QComboBox()
@@ -59,10 +25,10 @@ class EEG_Application(QtGui.QApplication):
         self.ch_select_btn = QtGui.QPushButton("Select Channels")
         self.plot = pg.PlotWidget()
         self.plot.setMouseEnabled(x= False, y= True)
-        raw_data_dock.addWidget(self.mode_btn, 0, 0, 1, 1)
-        raw_data_dock.addWidget(self.dtypeCombo, 0, 1, 1, 1)
-        raw_data_dock.addWidget(self.ch_select_btn, 0, 2, 1, 1)
-        raw_data_dock.addWidget(self.plot, 1, 0, 4, 4)
+        self.addWidget(self.mode_btn, 0, 0, 1, 1)
+        self.addWidget(self.dtypeCombo, 0, 1, 1, 1)
+        self.addWidget(self.ch_select_btn, 0, 2, 1, 1)
+        self.addWidget(self.plot, 1, 0, 4, 4)
 
         self.cursor = pg.InfiniteLine(pos=0)
         self.plot.addItem(self.cursor)
@@ -92,14 +58,6 @@ class EEG_Application(QtGui.QApplication):
         self.mode_btn.clicked.connect(self.raw_data_mode_handler)
         self.ch_select_btn.clicked.connect(self.show_channel_select_window)
         self.selected_channels = list(range(64))
-        return raw_data_dock
-
-    def create_dummy_dock(self,title="Dummy"):
-        dummy_dock = Dock(title)
-        w3 = pg.PlotWidget(title="Plot inside dock")
-        w3.plot(np.random.normal(size=100))
-        dummy_dock.addWidget(w3)
-        return dummy_dock
 
     def update_raw_plot(self):
         tol_start = time.time()
@@ -161,3 +119,49 @@ class EEG_Application(QtGui.QApplication):
     def select_all_channels(self):
         for idx in range(len(self.channel_selector)):
             self.channel_selector.item(idx).setSelected(True)
+
+class EEG_Application(QtGui.QApplication):
+    def __init__(self):
+        super().__init__([])
+        self.main_win = QtGui.QMainWindow()
+        self.main_win.show()
+
+        config.init()
+        wsSetup.connect() 
+        self.setupUi()
+
+    def setupUi(self):
+        """Create Basic UI layout"""
+        self.main_win.setObjectName("MainWindow")
+        self.main_win.setWindowTitle("EEG")
+        self.main_win.resize(1800, 1000)
+
+        dockarea = DockArea()
+
+        raw_data_dock = Raw_Data_Dock()
+        dockarea.addDock(raw_data_dock)
+
+        left_bottom_dock = self.create_dummy_dock('Left bottom')
+        dockarea.addDock(left_bottom_dock,'bottom',raw_data_dock)
+
+        mid_top_dock = self.create_dummy_dock('Mid top')
+        dockarea.addDock(mid_top_dock,'right',raw_data_dock)
+
+        mid_bottom_dock = self.create_dummy_dock("Mid bottom")
+        dockarea.addDock(mid_bottom_dock,'right',left_bottom_dock)
+
+        right_top_dock = self.create_dummy_dock("Right top")
+        dockarea.addDock(right_top_dock,'right',mid_top_dock)
+
+        right_bottom_dock = self.create_dummy_dock("Right bottom")
+        dockarea.addDock(right_bottom_dock,'right',mid_bottom_dock)
+
+        self.main_win.setCentralWidget(dockarea)
+        QtCore.QMetaObject.connectSlotsByName(self.main_win)
+
+    def create_dummy_dock(self,title="Dummy"):
+        dummy_dock = Dock(title)
+        w3 = pg.PlotWidget(title="Plot inside dock")
+        w3.plot(np.random.normal(size=100))
+        dummy_dock.addWidget(w3)
+        return dummy_dock
