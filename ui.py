@@ -8,6 +8,76 @@ import time
 import config
 import wsSetup
 
+class WS_Data(object):
+    """
+    This class create a websocket and handle data which is received from socket
+    """
+    def __init__(self):
+        """
+        Create a websocket and setup its handler
+        """
+        pass
+
+    def on_message(self, ws, message):
+        """
+        Handle data from socket and store it into different plot's data structure
+        """
+        pass
+
+    def on_error(self, ws, error):
+        """
+        Handle websocket error
+        """
+        pass
+
+    def on_close(self, ws):
+        """
+        Handle websocket close event
+        """
+        pass
+
+    def add_plot_raw_data(self, data):
+        """
+        Store the raw data plot data received from websocket
+        """
+        pass
+
+    def get_plot_raw_data(self, mode="Scan", channels=None):
+        """
+        Return the raw data used to draw ``mode`` mode raw data plot
+        The return value follow the order of channels.
+
+        The ``channels`` is the index of channels,
+        if ``channels`` is None, return all channels.
+        [
+            [
+                {x: 0.5, y: 1.0},
+                ...
+            ],
+            ...
+        ]
+        """
+        pass
+
+    def get_plot_scale_line_pos(self, channels=None):
+        """
+        Return the scale lines position of ``index`` channels in raw data plot.
+        The return value follow the order of channels.
+
+        The ``channels`` is the index of channels,
+        if ``channels`` is None, return all channels.
+        [
+            {
+                pos: 5,
+                ori: 0,
+                neg: -5,
+            },
+            ...
+        ]
+        """
+        pass
+
+
 class Raw_Data_Dock(Dock):
     def __init__(self):
         super().__init__("Raw Data Plot")
