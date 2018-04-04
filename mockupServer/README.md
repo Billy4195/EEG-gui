@@ -7,26 +7,18 @@
     - HZ (update frequncy)
         - default: 250
 
-### JSON format
+### JSON format (tmp)
 ```
 {
     name: "raw",
     type: "raw",
+    tick: 1234,
     data: {
-        eeg: Array(CH),
-        event: null,
-        auxiliary: null,
-        battery_power: null,
-        g_sensor: {
-            x: 2,
-            y: 2,
-            z: 2
-        },
-        gyro: null,
-        machine_info: null,
-        serial_number: SN++,
-        properties:["g_sensor", "serial_number", "eeg"],
-        tag_counts: 3
+        eeg: [0, 1.2, 3.5, .... ,2.1],
+        event: {
+            name: "eventABC",
+            duration: 10
+        }
     }
 }
 ```

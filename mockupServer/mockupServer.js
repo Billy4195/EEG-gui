@@ -16,34 +16,38 @@ var wsServer = new webSocketServer({
 
 ////////////////////////////////////
 let factor = 0;
-let SN = 0;
+let sendEvent = false;
+let mockTick = 0
 
 const generateJSON = () => {
+    let currentEvent = null;
+    if(sendEvent) {
+        currentEvent = {
+            name: "testEvent@" + mockTick.toString(),
+            duration: 10
+        }
+        sendEvent = false;
+    }
+
     return {
         name: "raw",
         type: "raw",
+        tick: mockTick,
         data: {
             eeg: Array(channelNum).fill(Math.sin(factor)),
-            event: null,
-            auxiliary: null,
-            battery_power: null,
-            g_sensor: {
-                x: 2,
-                y: 2,
-                z: 2
-            },
-            gyro: null,
-            machine_info: null,
-            serial_number: SN++,
-            properties:["g_sensor", "serial_number", "eeg"],
-            tag_counts: 3
+            event: currentEvent
         }
     };
 };
 ////////////////////////////////////
 setInterval(() => {
-    factor += 0.1;
-}, 10);
+    factor += 0.04;
+    mockTick += 4;
+}, 4);
+
+setInterval(() => {
+    sendEvent = true; //send a test event every 5 second
+}, 5000)
 
 wsServer.on("request", (request) => {
     var connection = request.accept(null, request.origin); 
