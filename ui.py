@@ -9,17 +9,41 @@ import config
 import wsSetup
 import websocket
 import threading
+import json
+import logging
 
 class WS_Data(object):
     """
     This class create a websocket and handle data which is received from socket
     """
-    def __init__(self,url):
+    def __init__(self, url, channel_num=64, scale_line_rel_val=2, scale_line_real_val=3, data_window_height=10):
         """
         Create a websocket and setup its handler
+
+        url:
+            The url for web socket to connect with
+
+        channel_num:
+            The number of channels
+
+        scale_line_rel_val:
+            The relative value between scale line and real value in channel data
+
+        scale_line_real_val:
+            The real value of scale line associates with plot y axis
+
+        data_window_height:
+            The window height is the shift height of each channel data
+
         """
         self.url = url
-        websocket.enableTrace(True)
+        self.channel_num = channel_num
+        self.scale_line_rel_val = scale_line_rel_val
+        self.scale_line_real_val = scale_line_real_val
+        self.data_window_height = data_window_height
+        self.raw_data = list()
+        self.transed_raw_data = list()
+
         self.ws = websocket.WebSocketApp(url,
                                     on_message = self.on_message,
                                     on_error = self.on_error,
@@ -28,11 +52,19 @@ class WS_Data(object):
         self.ws_thread.daemon = True
         self.ws_thread.start()
 
+        for i in range(self.channel_num):
+            self.raw_data.append(list())
+            self.transed_raw_data.append(list())
+
     def on_message(self, ws, message):
         """
         Handle data from socket and store it into different plot's data structure
         """
-        pass
+        raw = json.loads(message)
+        try:
+            self.add_plot_raw_data(raw['data']['eeg'])
+        except Exception as e:
+            logging.error(str(e))
 
     def on_error(self, ws, error):
         """
@@ -48,9 +80,16 @@ class WS_Data(object):
 
     def add_plot_raw_data(self, data):
         """
-        Store the raw data plot data received from websocket
+        Store the raw data plot data received from websocket, and store the transformed data.
+
+        The transformation is to let original data fit into specific scale.
         """
-        pass
+        if len(data) != self.channel_num:
+            raise AssertionError("The received raw data unmatch channel num")
+
+        for idx, ori_data in enumerate(data):
+            self.raw_data[idx].append(ori_data)
+            self.transed_raw_data[idx].append(self._tranform_data(ori_data))
 
     def get_plot_raw_data(self, mode="Scan", channels=None):
         """
@@ -86,6 +125,12 @@ class WS_Data(object):
         ]
         """
         pass
+
+    def _tranform_data(self,ori_data):
+        """
+        Transform the original data to the specify scale
+        """
+        return self.scale_line_real_val * (ori_data/self.scale_line_rel_val)
 
 
 class Raw_Data_Dock(Dock):
