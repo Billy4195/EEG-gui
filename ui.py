@@ -7,16 +7,26 @@ import numpy as np
 import time
 import config
 import wsSetup
+import websocket
+import threading
 
 class WS_Data(object):
     """
     This class create a websocket and handle data which is received from socket
     """
-    def __init__(self):
+    def __init__(self,url):
         """
         Create a websocket and setup its handler
         """
-        pass
+        self.url = url
+        websocket.enableTrace(True)
+        self.ws = websocket.WebSocketApp(url,
+                                    on_message = self.on_message,
+                                    on_error = self.on_error,
+                                    on_close = self.on_close)
+        self.ws_thread = threading.Thread(target=self.ws.run_forever)
+        self.ws_thread.daemon = True
+        self.ws_thread.start()
 
     def on_message(self, ws, message):
         """
