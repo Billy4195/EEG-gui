@@ -168,6 +168,7 @@ class Raw_Data_Dock(Dock):
         self.ch_select_btn = QtGui.QPushButton("Select Channels")
         self.plot = pg.PlotWidget()
         self.plot.setMouseEnabled(x= False, y= True)
+        self.plot.setLimits(xMin=0, xMax=2500, yMin=-10, yMax=650, minYRange=-10, maxYRange=650)
         self.addWidget(self.mode_btn, 0, 0, 1, 1)
         self.addWidget(self.dtypeCombo, 0, 1, 1, 1)
         self.addWidget(self.ch_select_btn, 0, 2, 1, 1)
