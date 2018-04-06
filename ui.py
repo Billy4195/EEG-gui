@@ -176,6 +176,10 @@ class Raw_Data_Dock(Dock):
         self.cursor = pg.InfiniteLine(pos=0)
         self.plot.addItem(self.cursor)
 
+        for i in range(10):
+            self.tmp_ref_line = pg.InfiniteLine(pos=i*250, pen=pg.mkPen(color=(192, 192, 192), style=QtCore.Qt.DotLine))
+            self.plot.addItem(self.tmp_ref_line)
+
         for i in range(64):
             self.zeroBaseLine = pg.InfiniteLine(pos=i*10, angle=180, pen=(128, 128, 128))
             self.negBaseLine = pg.InfiniteLine(pos=i*10 - 3, angle=180, pen=pg.mkPen(color=(80, 80, 80), style=QtCore.Qt.DotLine))
