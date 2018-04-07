@@ -27,3 +27,11 @@
 npm install
 PORT=8888 CH=64 HZ=250 node mockupServer.js //you can execute without options
 ```
+```
+You can change frequency via terminal by typing `125` or `250`,
+Also, you can change frequency via websocket message, the format is JSON:
+{
+    frequency: 125
+}
+
+```
