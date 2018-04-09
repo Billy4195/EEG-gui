@@ -166,6 +166,10 @@ class WS_Data(object):
 
 class Raw_Data_Dock(Dock):
     def __init__(self, url=None):
+        """
+        Initialize the UI and create ``WS_Data`` to connect to web socket
+        url: The url for web socket to connect with
+        """
         super().__init__("Raw Data Plot")
 
         if url is None:
