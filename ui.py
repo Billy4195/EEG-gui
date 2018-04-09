@@ -53,7 +53,7 @@ class WS_Data(object):
                                     on_message = self.on_message,
                                     on_error = self.on_error,
                                     on_close = self.on_close)
-        self.ws_thread = threading.Thread(target=self.ws.run_forever)
+        self.ws_thread = threading.Thread(target=self.on_connect)
         self.ws_thread.daemon = True
         self.ws_thread.start()
 
@@ -61,6 +61,12 @@ class WS_Data(object):
         for i in range(self.channel_num):
             self.raw_data.append(list())
             self.transed_raw_data.append(list())
+
+    def on_connect(self):
+        while True:
+            self.ws.run_forever()
+            logging.error("Connection closed reconnect in 0.5 sec")
+            time.sleep(0.5)
 
     def on_message(self, ws, message):
         """
@@ -233,6 +239,9 @@ class Raw_Data_Dock(Dock):
         self.selected_channels = list(range(64))
 
     def update_raw_plot(self):
+        if not self.ws_data.ws.sock or not self.ws_data.ws.sock.connected:
+            return
+
         if self.cursor_time is None:
             #TODO determine the start cursor_time
             self.cursor_time = self.ws_data.raw_data_time[-1]
