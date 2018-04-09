@@ -16,7 +16,7 @@ class WS_Data(object):
     """
     This class create a websocket and handle data which is received from socket
     """
-    def __init__(self, url, channel_num=64, scale_line_rel_val=2,
+    def __init__(self, url, channel_num=64, scale_line_rela_val=2,
          scale_line_real_val=3, data_window_height=10,
          raw_plot_sample_rate=1000):
         """
@@ -28,7 +28,7 @@ class WS_Data(object):
         channel_num:
             The number of channels
 
-        scale_line_rel_val:
+        scale_line_rela_val:
             The relative value between scale line and real value in channel
             data
 
@@ -41,7 +41,7 @@ class WS_Data(object):
         """
         self.url = url
         self.channel_num = channel_num
-        self.scale_line_rel_val = scale_line_rel_val
+        self.scale_line_rela_val = scale_line_rela_val
         self.scale_line_real_val = scale_line_real_val
         self.data_window_height = data_window_height
         self.raw_plot_sample_rate = raw_plot_sample_rate
@@ -133,22 +133,35 @@ class WS_Data(object):
 
         The ``channels`` is the index of channels,
         if ``channels`` is None, return all channels.
-        [
-            {
-                pos: 5,
-                ori: 0,
-                neg: -5,
-            },
-            ...
-        ]
+
+        If
+            data_window_height = 10
+            scale_line_real_val = 3
+        Then
+        {
+            pos: [13, 23, 33, ...]
+            ori: [10, 20, 30, ...]
+            neg: [7 , 17, 27, ...]
+        }
         """
-        pass
+        if channels is None:
+            channels = range(1, self.channel_num)
+
+        pos = list()
+        ori = list()
+        neg = list()
+        for ch_origin in range(1, len(channels)+1):
+            ori.append(ch_origin*self.data_window_height)
+            pos.append(ori[-1]+self.scale_line_real_val)
+            neg.append(ori[-1]-self.scale_line_real_val)
+
+        return dict(pos=pos, ori=ori, neg=neg)
 
     def _tranform_data(self,ori_data):
         """
         Transform the original data to the specify scale
         """
-        return self.scale_line_real_val * (ori_data/self.scale_line_rel_val)
+        return self.scale_line_real_val * (ori_data/self.scale_line_rela_val)
 
 
 class Raw_Data_Dock(Dock):
