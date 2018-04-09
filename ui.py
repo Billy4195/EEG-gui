@@ -178,6 +178,8 @@ class Raw_Data_Dock(Dock):
             ws_url = url
 
         self.ws_data = WS_Data(url=ws_url)
+        self.cursor_time = None
+        self.timer_interval = 0.1
         self.init_ui()
 
     def init_ui(self):
@@ -223,7 +225,7 @@ class Raw_Data_Dock(Dock):
             self.curves.append(curve)
         
         self.timer = QtCore.QTimer()
-        self.timer.setInterval(100)
+        self.timer.setInterval(self.timer_interval*1000)
         self.timer.timeout.connect(self.update_raw_plot)
         self.timer.start()
         self.mode_btn.clicked.connect(self.raw_data_mode_handler)
@@ -231,6 +233,11 @@ class Raw_Data_Dock(Dock):
         self.selected_channels = list(range(64))
 
     def update_raw_plot(self):
+        if self.cursor_time is None:
+            #TODO determine the start cursor_time
+            self.cursor_time = self.ws_data.raw_data_time[-1]
+        else:
+            self.cursor_time += self.timer_interval
         tol_start = time.time()
         for i in range(64):
             if i not in self.selected_channels:
