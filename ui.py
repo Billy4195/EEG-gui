@@ -234,7 +234,7 @@ class Raw_Data_Dock(Dock):
             self.cursor.show()
 
     def show_channel_select_window(self):
-        self.channel_selector_win = QtGui.QDialog(self.main_win)
+        self.channel_selector_win = QtGui.QDialog(self)
         self.channel_selector_win.setWindowTitle("Select Channels")
         self.channel_selector_win.resize(500,400)
         gridlayout = QtGui.QGridLayout(self.channel_selector_win)
