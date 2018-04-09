@@ -165,9 +165,15 @@ class WS_Data(object):
 
 
 class Raw_Data_Dock(Dock):
-    def __init__(self):
+    def __init__(self, url=None):
         super().__init__("Raw Data Plot")
 
+        if url is None:
+            ws_url = "ws://localhost:8888"
+        else:
+            ws_url = url
+
+        self.ws_data = WS_Data(url=ws_url)
         self.init_ui()
 
     def init_ui(self):
