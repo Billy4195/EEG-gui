@@ -111,7 +111,7 @@ class Raw_Data_Plot_Data(object):
             }
         }
         """
-        origin = int(cursor - window_size)
+        origin = cursor - window_size
 
         origin_idx = None
         cursor_idx = 0
@@ -376,6 +376,14 @@ class WS_Data(object):
 
         return data
 
+    def clean_oudated_data(self, cursor):
+        outdated_time = cursor - 11
+        while self.raw_data_time[0] < outdated_time:
+            self.raw_data_time.pop(0)
+            for i in range(self.channel_num):
+                self.raw_data[i].pop(0)
+                self.transed_raw_data[i].pop(0)
+
     def get_plot_scale_line_pos(self, channels=None):
         """
         Return the scale lines position of ``index`` channels in raw data plot.
@@ -443,7 +451,7 @@ class Raw_Data_Dock(Dock):
         self.ch_select_btn = QtGui.QPushButton("Select Channels")
         self.plot = pg.PlotWidget()
         self.plot.setMouseEnabled(x= False, y= True)
-        self.plot.setLimits(xMin=0, xMax=2500, yMin=-10, yMax=650, minYRange=-10, maxYRange=650)
+        self.plot.setLimits(xMin=0, maxXRange=10)
         self.addWidget(self.mode_btn, 0, 0, 1, 1)
         self.addWidget(self.dtypeCombo, 0, 1, 1, 1)
         self.addWidget(self.ch_select_btn, 0, 2, 1, 1)
@@ -452,17 +460,25 @@ class Raw_Data_Dock(Dock):
         self.cursor = pg.InfiniteLine(pos=0)
         self.plot.addItem(self.cursor)
 
-        for i in range(10):
-            self.tmp_ref_line = pg.InfiniteLine(pos=i*250, pen=pg.mkPen(color=(192, 192, 192), style=QtCore.Qt.DotLine))
-            self.plot.addItem(self.tmp_ref_line)
+        self.tmp_ref_lines = list()
+        for i in range(11):
+            ref_line = pg.InfiniteLine(pos=i, pen=pg.mkPen(color=(192, 192, 192), style=QtCore.Qt.DotLine))
+            self.tmp_ref_lines.append(ref_line)
+            self.plot.addItem(ref_line)
 
-        for i in range(64):
-            self.zeroBaseLine = pg.InfiniteLine(pos=i*10, angle=180, pen=(128, 128, 128))
-            self.negBaseLine = pg.InfiniteLine(pos=i*10 - 3, angle=180, pen=pg.mkPen(color=(80, 80, 80), style=QtCore.Qt.DotLine))
-            self.posBaseLine = pg.InfiniteLine(pos=i*10 + 3, angle=180, pen=pg.mkPen(color=(80, 80, 80), style=QtCore.Qt.DotLine))
-            self.plot.addItem(self.zeroBaseLine)
-            self.plot.addItem(self.negBaseLine)
-            self.plot.addItem(self.posBaseLine)
+        self.zero_base_lines = list()
+        self.neg_base_lines = list()
+        self.pos_base_lines = list()
+        for i in range(1,65):
+            zero_line = pg.InfiniteLine(pos=i*10, angle=180, pen=(128, 128, 128))
+            neg_line = pg.InfiniteLine(pos=i*10 - 3, angle=180, pen=pg.mkPen(color=(80, 80, 80), style=QtCore.Qt.DotLine))
+            pos_line = pg.InfiniteLine(pos=i*10 + 3, angle=180, pen=pg.mkPen(color=(80, 80, 80), style=QtCore.Qt.DotLine))
+            self.zero_base_lines.append(zero_line)
+            self.neg_base_lines.append(neg_line)
+            self.pos_base_lines.append(pos_line)
+            self.plot.addItem(zero_line)
+            self.plot.addItem(neg_line)
+            self.plot.addItem(pos_line)
             
         self.curves = list()
 
@@ -480,7 +496,7 @@ class Raw_Data_Dock(Dock):
         self.timer.start()
         self.mode_btn.clicked.connect(self.raw_data_mode_handler)
         self.ch_select_btn.clicked.connect(self.show_channel_select_window)
-        self.selected_channels = list(range(64))
+        self.selected_channels = list(range(1, 65))
 
     def update_raw_plot(self):
         if not self.ws_data.ws.sock or not self.ws_data.ws.sock.connected:
@@ -489,21 +505,40 @@ class Raw_Data_Dock(Dock):
         if self.cursor_time is None:
             #TODO determine the start cursor_time
             self.cursor_time = self.ws_data.raw_data_time[-1]
-        else:
+        elif self.ws_data.raw_data_time[-1] - self.cursor_time > self.timer_interval:
             self.cursor_time += self.timer_interval
+        else:
+            self.cursor_time = self.ws_data.raw_data_time[-1]
         tol_start = time.time()
+        plot_data = self.ws_data.get_plot_raw_data(mode=self.raw_data_mode,
+                            channels=self.selected_channels,
+                            cursor=self.cursor_time)
+
+        axis = self.plot.getAxis("bottom")
+        axis.setTicks([plot_data.axises_tick["bottom"]])
+        axis = self.plot.getAxis("left")
+        axis.setTicks([plot_data.axises_tick["left"]])
+
+        for idx, (val, label) in enumerate(plot_data.axises_tick["bottom"]):
+            self.tmp_ref_lines[idx].setValue(val)
         for i in range(64):
-            if i not in self.selected_channels:
-                self.curves[i].hide()
-                continue
-            else:
+            if i < len(self.selected_channels):
                 self.curves[i].show()
-            if self.raw_data_mode == "Scan":
-                self.curves[i].setData(config.rawList[i][-config.currentIndex:]+config.rawList[i][:-config.currentIndex])
-            elif self.raw_data_mode == "Scroll":
-                self.curves[i].setData(config.rawList[i])
+                self.zero_base_lines[i].show()
+                self.neg_base_lines[i].show()
+                self.pos_base_lines[i].show()
+            else:
+                self.curves[i].hide()
+                self.zero_base_lines[i].hide()
+                self.neg_base_lines[i].hide()
+                self.pos_base_lines[i].hide()
+                continue
+
+            self.curves[i].setData(plot_data.time_data, plot_data.channel_data[i])
+
         self.plot.setTitle("FPS: {:.1f}".format(1/(time.time()-tol_start)))
-        self.cursor.setValue(config.currentIndex)
+        self.cursor.setValue(self.cursor_time % 10)
+        self.ws_data.clean_oudated_data(self.cursor_time)
 
     def raw_data_mode_handler(self):
         if self.raw_data_mode == "Scan":
@@ -524,7 +559,7 @@ class Raw_Data_Dock(Dock):
 
         self.channel_selector = QtGui.QListWidget()
         self.channel_selector.setSelectionMode(QtGui.QAbstractItemView.MultiSelection)
-        for i in range(64):
+        for i in range(1, 65):
             item = QtGui.QListWidgetItem(self.channel_selector)
             item.setText("Channel {}".format(i))
             item.setData(QtCore.Qt.UserRole, i)
@@ -544,7 +579,7 @@ class Raw_Data_Dock(Dock):
         self.channel_selector_win.show()
 
     def channel_select_handler(self):
-        self.selected_channels = [item.data(QtCore.Qt.UserRole) for item in self.channel_selector.selectedItems()]
+        self.selected_channels = sorted([item.data(QtCore.Qt.UserRole) for item in self.channel_selector.selectedItems()])
         self.channel_selector_win.close()
 
     def select_all_channels(self):
