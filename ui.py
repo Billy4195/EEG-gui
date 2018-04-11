@@ -12,6 +12,7 @@ import threading
 import json
 import logging
 import math
+import ScaleUI
 
 class Raw_Data_Plot_Data(object):
     def __init__(self, time_data, channel_data, mode, channels, cursor,
@@ -449,12 +450,14 @@ class Raw_Data_Dock(Dock):
         self.dtypeCombo.addItem("500")
         self.dtypeCombo.addItem("1000")
         self.ch_select_btn = QtGui.QPushButton("Select Channels")
+        self.scale_adjust_btn = QtGui.QPushButton("Adjust Scales")
         self.plot = pg.PlotWidget()
         self.plot.setMouseEnabled(x= False, y= True)
         self.plot.setLimits(xMin=0, maxXRange=10)
         self.addWidget(self.mode_btn, 0, 0, 1, 1)
         self.addWidget(self.dtypeCombo, 0, 1, 1, 1)
         self.addWidget(self.ch_select_btn, 0, 2, 1, 1)
+        self.addWidget(self.scale_adjust_btn, 0, 3, 1, 1)
         self.addWidget(self.plot, 1, 0, 4, 4)
 
         self.cursor = pg.InfiniteLine(pos=0)
@@ -497,6 +500,9 @@ class Raw_Data_Dock(Dock):
         self.mode_btn.clicked.connect(self.raw_data_mode_handler)
         self.ch_select_btn.clicked.connect(self.show_channel_select_window)
         self.selected_channels = list(range(1, 65))
+        self.scale_adjust_btn.clicked.connect(self.show_scale_adjust_window)
+        self.current_scale = 1 #dummy
+
 
     def update_raw_plot(self):
         if not self.ws_data.ws.sock or not self.ws_data.ws.sock.connected:
@@ -550,6 +556,31 @@ class Raw_Data_Dock(Dock):
             self.raw_data_mode = "Scan"
             self.mode_btn.setText("Change to Scroll Mode")
             self.cursor.show()
+            
+    def show_scale_adjust_window(self):
+        self.scale_adjust_win = QtGui.QDialog(self)
+        self.scale_adjust_win.setWindowTitle("Adjust Scales")
+        self.scale_adjust_win.resize(500,100)
+        gridlayout = QtGui.QGridLayout(self.scale_adjust_win)
+
+        self.slider = ScaleUI.Slider(self.current_scale, 0, 5)
+
+        scale_adjust_button_box = QtGui.QDialogButtonBox(QtCore.Qt.Horizontal,self.scale_adjust_win)
+        scale_adjust_button_box.addButton("Cancel", QtGui.QDialogButtonBox.RejectRole)
+        scale_adjust_button_box.addButton("Apply", QtGui.QDialogButtonBox.AcceptRole)
+        scale_adjust_button_box.accepted.connect(self.scale_adjust_handler)
+        scale_adjust_button_box.rejected.connect(self.scale_adjust_win.close)
+
+        gridlayout.addWidget(self.slider,0,0)
+        gridlayout.addWidget(scale_adjust_button_box,1,0)
+
+        self.scale_adjust_win.show()
+    
+    def scale_adjust_handler(self):
+        #dummy
+        self.current_scale = self.slider.get_value()
+        print ('Set scale as:', self.current_scale)
+        self.scale_adjust_win.close()
 
     def show_channel_select_window(self):
         self.channel_selector_win = QtGui.QDialog(self)
