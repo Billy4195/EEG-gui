@@ -5,8 +5,6 @@ from pyqtgraph.dockarea import *
 from PyQt5 import QtCore, QtGui, QtWidgets
 import numpy as np
 import time
-import config
-import wsSetup
 import websocket
 import threading
 import json
@@ -490,7 +488,6 @@ class Raw_Data_Dock(Dock):
             g = (i + 2 ) * 7 % 256
             b = (i + 15 ) * 11 % 256
             curve = self.plot.plot(pen=(r,g,b))
-            curve.setData(config.rawList[i])
             self.curves.append(curve)
         
         self.timer = QtCore.QTimer()
@@ -623,8 +620,6 @@ class EEG_Application(QtGui.QApplication):
         self.main_win = QtGui.QMainWindow()
         self.main_win.show()
 
-        config.init()
-        wsSetup.connect() 
         self.setupUi()
 
     def setupUi(self):
