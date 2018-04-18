@@ -422,6 +422,7 @@ class WS_Data(object):
 
 
 class Raw_Data_Dock(Dock):
+    resized = QtCore.pyqtSignal()
     def __init__(self, url=None):
         """
         Initialize the UI and create ``WS_Data`` to connect to web socket
@@ -437,6 +438,9 @@ class Raw_Data_Dock(Dock):
         self.ws_data = WS_Data(url=ws_url)
         self.cursor_time = None
         self.timer_interval = 0.1
+        self.curve_size = 27 # 1080 / 2 / 20
+        self.selected_channels = list(range(1, 65))
+        self.current_scale = 1 #dummy
         self.init_ui()
 
     def init_ui(self):
@@ -449,14 +453,23 @@ class Raw_Data_Dock(Dock):
         self.dtypeCombo.addItem("1000")
         self.ch_select_btn = QtGui.QPushButton("Select Channels")
         self.scale_adjust_btn = QtGui.QPushButton("Adjust Scales")
+        raw_plot_widget = QtGui.QWidget()
+        plot_layout = QtGui.QHBoxLayout()
+        plot_layout.setSpacing(0)
         self.plot = pg.PlotWidget()
-        self.plot.setMouseEnabled(x= False, y= True)
+        self.plot.setMouseEnabled(x= False, y= False)
         self.plot.setLimits(xMin=0, maxXRange=10)
+        self.plot.enableAutoRange(x=True, y=False)
+        self.scroll = QtGui.QScrollBar()
+        plot_layout.addWidget(self.plot)
+        plot_layout.addWidget(self.scroll)
+        raw_plot_widget.setLayout(plot_layout)
         self.addWidget(self.mode_btn, 0, 0, 1, 1)
         self.addWidget(self.dtypeCombo, 0, 1, 1, 1)
         self.addWidget(self.ch_select_btn, 0, 2, 1, 1)
         self.addWidget(self.scale_adjust_btn, 0, 3, 1, 1)
-        self.addWidget(self.plot, 1, 0, 4, 4)
+        self.addWidget(raw_plot_widget, 1, 0, 4, 4)
+        self.resized.connect(self.update_curves_size)
 
         self.cursor = pg.InfiniteLine(pos=0)
         self.plot.addItem(self.cursor)
@@ -489,6 +502,7 @@ class Raw_Data_Dock(Dock):
             b = (i + 15 ) * 11 % 256
             curve = self.plot.plot(pen=(r,g,b))
             self.curves.append(curve)
+        self.update_curves_size()
         
         self.timer = QtCore.QTimer()
         self.timer.setInterval(self.timer_interval*1000)
@@ -496,10 +510,26 @@ class Raw_Data_Dock(Dock):
         self.timer.start()
         self.mode_btn.clicked.connect(self.raw_data_mode_handler)
         self.ch_select_btn.clicked.connect(self.show_channel_select_window)
-        self.selected_channels = list(range(1, 65))
         self.scale_adjust_btn.clicked.connect(self.show_scale_adjust_window)
-        self.current_scale = 1 #dummy
+        self.scroll.valueChanged.connect(self.update_curves_size)
 
+    def update_curves_size(self):
+        geo = self.plot.frameGeometry()
+        
+        scroll_val = self.scroll.value()
+        num_show_curves = geo.height() // self.curve_size
+        num_select_channels = len(self.selected_channels)
+        if num_select_channels < num_show_curves:
+            num_show_curves = len(self.selected_channels)
+
+        maxY = (num_select_channels - scroll_val) * 10 + 5
+        minY = (num_select_channels - scroll_val - num_show_curves) * 10 + 5
+        if minY < 0:
+            minY = 0
+
+        self.plot.setYRange(minY, maxY, padding=0)
+        
+        self.scroll.setMaximum(num_select_channels - num_show_curves)
 
     def update_raw_plot(self):
         if not self.ws_data.ws.sock or not self.ws_data.ws.sock.connected:
@@ -608,11 +638,21 @@ class Raw_Data_Dock(Dock):
 
     def channel_select_handler(self):
         self.selected_channels = sorted([item.data(QtCore.Qt.UserRole) for item in self.channel_selector.selectedItems()])
+        self.update_curves_size()
         self.channel_selector_win.close()
 
     def select_all_channels(self):
         for idx in range(len(self.channel_selector)):
             self.channel_selector.item(idx).setSelected(True)
+
+    def resizeEvent(self, event):
+        self.resized.emit()
+        return super().resizeEvent(event)
+
+    def wheelEvent(self, event):
+        scroll_change = -(event.angleDelta().y() // 120)
+        scroll_val = self.scroll.value()
+        self.scroll.setValue(scroll_val + scroll_change)
 
 class EEG_Application(QtGui.QApplication):
     def __init__(self):
