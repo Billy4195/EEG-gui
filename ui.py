@@ -420,6 +420,14 @@ class WS_Data(object):
         """
         return self.scale_line_real_val * (ori_data/self.scale_line_rela_val)
 
+    def update_scale_line_rela_val(self, new_scale_line_rela_val):
+        self.scale_line_rela_val = new_scale_line_rela_val
+        for idx_ch in range(len(self.raw_data)):
+            for idx_data in range(len(self.raw_data[idx_ch])):
+                self.transed_raw_data[idx_ch][idx_data] = self._tranform_data(self.raw_data[idx_ch][idx_data])
+                             
+    def get_scale_line_rela_val(self):
+        return self.scale_line_rela_val
 
 class Raw_Data_Dock(Dock):
     resized = QtCore.pyqtSignal()
@@ -440,7 +448,6 @@ class Raw_Data_Dock(Dock):
         self.timer_interval = 0.1
         self.curve_size = 27 # 1080 / 2 / 20
         self.selected_channels = list(range(1, 65))
-        self.current_scale = 1 #dummy
         self.init_ui()
 
     def init_ui(self):
@@ -590,7 +597,7 @@ class Raw_Data_Dock(Dock):
         self.scale_adjust_win.resize(500,100)
         gridlayout = QtGui.QGridLayout(self.scale_adjust_win)
 
-        self.slider = ScaleUI.Slider(self.current_scale, 0, 5)
+        self.slider = ScaleUI.Slider(self.ws_data.get_scale_line_rela_val(), 0, 5)
 
         scale_adjust_button_box = QtGui.QDialogButtonBox(QtCore.Qt.Horizontal,self.scale_adjust_win)
         scale_adjust_button_box.addButton("Cancel", QtGui.QDialogButtonBox.RejectRole)
@@ -604,9 +611,7 @@ class Raw_Data_Dock(Dock):
         self.scale_adjust_win.show()
     
     def scale_adjust_handler(self):
-        #dummy
-        self.current_scale = self.slider.get_value()
-        print ('Set scale as:', self.current_scale)
+        self.ws_data.update_scale_line_rela_val(self.slider.get_value())
         self.scale_adjust_win.close()
 
     def show_channel_select_window(self):
