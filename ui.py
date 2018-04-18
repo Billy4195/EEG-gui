@@ -631,10 +631,12 @@ class Raw_Data_Dock(Dock):
 
         channel_selector_button_box = QtGui.QDialogButtonBox(QtCore.Qt.Horizontal,self.channel_selector_win)
         channel_selector_button_box.addButton("Cancel", QtGui.QDialogButtonBox.RejectRole)
-        channel_selector_button_box.addButton("Select", QtGui.QDialogButtonBox.AcceptRole)
-        select_all_btn = channel_selector_button_box.addButton("Select All", QtGui.QDialogButtonBox.ResetRole)
+        channel_selector_button_box.addButton("Apply", QtGui.QDialogButtonBox.AcceptRole)
+        deselect_all_btn = channel_selector_button_box.addButton("Deselect All", QtGui.QDialogButtonBox.ResetRole)
+        select_all_btn = channel_selector_button_box.addButton("Select All", QtGui.QDialogButtonBox.ActionRole)
         channel_selector_button_box.accepted.connect(self.channel_select_handler)
         channel_selector_button_box.rejected.connect(self.channel_selector_win.close)
+        deselect_all_btn.clicked.connect(self.select_none_channels)
         select_all_btn.clicked.connect(self.select_all_channels)
 
         gridlayout.addWidget(self.channel_selector,0,0)
@@ -649,6 +651,10 @@ class Raw_Data_Dock(Dock):
     def select_all_channels(self):
         for idx in range(len(self.channel_selector)):
             self.channel_selector.item(idx).setSelected(True)
+    
+    def select_none_channels(self):
+        for idx in range(len(self.channel_selector)):
+            self.channel_selector.item(idx).setSelected(False)
 
     def resizeEvent(self, event):
         self.resized.emit()
