@@ -21,7 +21,7 @@ class Server {
         this.stdinListener();
         this.wss = this.initServer();
         this.setHandler();
-        this.printMsgCount();
+        //this.printMsgCount();
     }
 
     mockLoop() {
@@ -142,6 +142,7 @@ class Server {
         else if(type === "DEC") {
             let currentEvent = null;
             if(this.decEvent) {
+                console.log("testEvent@", this.tick.toString());
                 currentEvent = {
                     name: "testEvent@" + this.tick.toString(),
                     duration: 10

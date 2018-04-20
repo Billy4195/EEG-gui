@@ -10,12 +10,13 @@ import threading
 import json
 import logging
 import math
+import copy
 import ScaleUI
 
 class Raw_Data_Plot_Data(object):
-    def __init__(self, time_data, channel_data, mode, channels, cursor,
+    def __init__(self, time_data, channel_data, events, mode, channels, cursor,
                     window_size=10):
-
+        self.trans_events = copy.deepcopy(events)
         self.set_mode(mode)
         self.param = self.cal_mode_param(time_data, cursor, window_size)
         self.axises_tick = self.calculate_axises_tick(time_data, channels,
@@ -217,6 +218,17 @@ class Raw_Data_Plot_Data(object):
 
             self.time_data = target_time_data
             self.channel_data = shifted_channel_data
+
+            self.trans_events[:] = [event for event in self.trans_events if (event['time'] >= self.param['last_origin'] and event['time'] <= self.param['cursor'])]
+
+            for idx in range(len(self.trans_events)):
+                tmp_time = self.trans_events[idx]['time']
+                if tmp_time >= self.param['origin']:
+                    self.trans_events[idx]['time'] -= self.param['origin']
+                elif tmp_time < self.param['origin']:
+                    self.trans_events[idx]['time'] += 10
+                    self.trans_events[idx]['time'] -= self.param['origin']
+    
         elif self.mode == "Scroll":
             origin = self.param['origin']
 
@@ -235,6 +247,9 @@ class Raw_Data_Plot_Data(object):
             self.time_data = target_time_data
             self.channel_data = shifted_channel_data
 
+            self.trans_events[:] = [event for event in self.trans_events if (event['time'] >= self.param['origin'] and event['time'] <= self.param['cursor'])]
+            for event in self.trans_events:
+                event['time'] -= self.param['origin']          
 
 class WS_Data(object):
     """
@@ -334,6 +349,7 @@ class WS_Data(object):
 
         if data['data']['event']:
             self.events.append({
+                'tick': data['tick'],
                 'time': time,
                 'name': data['data']['event']['name'],
                 'duration': data['data']['event']['duration']
@@ -369,7 +385,7 @@ class WS_Data(object):
         if channels is None:
             channels = range(1, self.channel_num+1)
 
-        data = Raw_Data_Plot_Data(self.raw_data_time, self.transed_raw_data,
+        data = Raw_Data_Plot_Data(self.raw_data_time, self.transed_raw_data, self.events,
                                     mode=mode, channels=channels,
                                     cursor=cursor)
 
@@ -382,6 +398,8 @@ class WS_Data(object):
             for i in range(self.channel_num):
                 self.raw_data[i].pop(0)
                 self.transed_raw_data[i].pop(0)
+        while len(self.events) != 0 and self.events[0]['tick'] / self.raw_plot_sample_rate < outdated_time:
+            self.events.pop(0)
 
     def get_plot_scale_line_pos(self, channels=None):
         """
@@ -520,6 +538,13 @@ class Raw_Data_Dock(Dock):
         self.scale_adjust_btn.clicked.connect(self.show_scale_adjust_window)
         self.scroll.valueChanged.connect(self.update_curves_size)
 
+        self.event_lines = list()
+        for i in range(20):
+            event_line = pg.InfiniteLine(pos=0)
+            self.event_lines.append(event_line)
+            self.plot.addItem(event_line)
+            event_line.hide()
+
     def update_curves_size(self):
         geo = self.plot.frameGeometry()
         
@@ -553,6 +578,9 @@ class Raw_Data_Dock(Dock):
         plot_data = self.ws_data.get_plot_raw_data(mode=self.raw_data_mode,
                             channels=self.selected_channels,
                             cursor=self.cursor_time)
+        
+        for i in range(len(self.event_lines)):
+            self.event_lines[i].hide()
 
         axis = self.plot.getAxis("bottom")
         axis.setTicks([plot_data.axises_tick["bottom"]])
@@ -575,6 +603,10 @@ class Raw_Data_Dock(Dock):
                 continue
 
             self.curves[i].setData(plot_data.time_data, plot_data.channel_data[i])
+        
+        for idx in range(len(plot_data.trans_events)):
+            self.event_lines[idx].setValue(plot_data.trans_events[idx]['time'])
+            self.event_lines[idx].show()
 
         self.plot.setTitle("FPS: {:.1f}".format(1/(time.time()-tol_start)))
         self.cursor.setValue(self.cursor_time % 10)
