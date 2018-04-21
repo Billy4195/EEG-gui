@@ -352,7 +352,7 @@ class WS_Data(object):
                 'tick': data['tick'],
                 'time': time,
                 'name': data['data']['event']['name'],
-                'duration': data['data']['event']['duration']
+                'duration': data['data']['event']['duration']        
             })
 
     def get_plot_raw_data(self, mode="Scan", channels=None, cursor=None):
@@ -478,6 +478,7 @@ class Raw_Data_Dock(Dock):
         self.dtypeCombo.addItem("1000")
         self.ch_select_btn = QtGui.QPushButton("Select Channels")
         self.scale_adjust_btn = QtGui.QPushButton("Adjust Scales")
+        self.event_table_btn = QtGui.QPushButton("Show Events")
         raw_plot_widget = QtGui.QWidget()
         plot_layout = QtGui.QHBoxLayout()
         plot_layout.setSpacing(0)
@@ -491,9 +492,10 @@ class Raw_Data_Dock(Dock):
         raw_plot_widget.setLayout(plot_layout)
         self.addWidget(self.mode_btn, 0, 0, 1, 1)
         self.addWidget(self.dtypeCombo, 0, 1, 1, 1)
-        self.addWidget(self.ch_select_btn, 0, 2, 1, 1)
-        self.addWidget(self.scale_adjust_btn, 0, 3, 1, 1)
-        self.addWidget(raw_plot_widget, 1, 0, 4, 4)
+        self.addWidget(self.ch_select_btn, 1, 0, 1, 1)
+        self.addWidget(self.scale_adjust_btn, 1, 1, 1, 1)
+        self.addWidget(self.event_table_btn, 1, 2, 1, 1)
+        self.addWidget(raw_plot_widget, 2, 0, 4, 4)
         self.resized.connect(self.update_curves_size)
 
         self.cursor = pg.InfiniteLine(pos=0)
@@ -536,6 +538,7 @@ class Raw_Data_Dock(Dock):
         self.mode_btn.clicked.connect(self.raw_data_mode_handler)
         self.ch_select_btn.clicked.connect(self.show_channel_select_window)
         self.scale_adjust_btn.clicked.connect(self.show_scale_adjust_window)
+        self.event_table_btn.clicked.connect(self.show_event_table_window)
         self.scroll.valueChanged.connect(self.update_curves_size)
 
         self.event_lines = list()
@@ -544,6 +547,10 @@ class Raw_Data_Dock(Dock):
             self.event_lines.append(event_line)
             self.plot.addItem(event_line)
             event_line.hide()
+        
+        self.eventTable = QtGui.QTableWidget()
+        self.eventTable.setColumnCount(3)
+        self.eventTable.setHorizontalHeaderLabels(['Time', 'Name', 'Duration'])
 
     def update_curves_size(self):
         geo = self.plot.frameGeometry()
@@ -611,6 +618,8 @@ class Raw_Data_Dock(Dock):
         self.plot.setTitle("FPS: {:.1f}".format(1/(time.time()-tol_start)))
         self.cursor.setValue(self.cursor_time % 10)
         self.ws_data.clean_oudated_data(self.cursor_time)
+
+        self.update_event_table()
 
     def raw_data_mode_handler(self):
         if self.raw_data_mode == "Scan":
@@ -687,6 +696,28 @@ class Raw_Data_Dock(Dock):
     def select_none_channels(self):
         for idx in range(len(self.channel_selector)):
             self.channel_selector.item(idx).setSelected(False)
+
+    def show_event_table_window(self):
+        self.event_table_win = QtGui.QDialog(self)
+        self.event_table_win.setWindowTitle("Event List")
+        self.event_table_win.resize(500,400)
+        gridlayout = QtGui.QGridLayout(self.event_table_win)
+        gridlayout.addWidget(self.eventTable)
+        self.update_event_table()
+        self.event_table_win.show()
+
+    def update_event_table(self):
+        self.eventTable.clearContents()
+        if len(self.ws_data.events) > 0:
+            self.eventTable.setRowCount(len(self.ws_data.events))
+            for row, event in enumerate(self.ws_data.events):
+                for key, value in event.items():
+                    if key is 'time':
+                        self.eventTable.setItem(row, 0, QtGui.QTableWidgetItem(str(value)))
+                    elif key is 'name':
+                        self.eventTable.setItem(row, 1, QtGui.QTableWidgetItem(str(value)))
+                    elif key is 'duration':
+                        self.eventTable.setItem(row, 2, QtGui.QTableWidgetItem(str(value)))
 
     def resizeEvent(self, event):
         self.resized.emit()
