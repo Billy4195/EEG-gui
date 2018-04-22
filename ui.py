@@ -504,6 +504,7 @@ class Raw_Data_Dock(Dock):
         self.selected_channels = list(range(1, 65))
         self.raw_data_mode = "Scan"
         self.init_ui()
+        self.setup_signal_handler()
 
     def init_ui(self):
         self.mode_btn = QtGui.QPushButton("Change to Scroll Mode")
@@ -535,8 +536,6 @@ class Raw_Data_Dock(Dock):
         self.addWidget(self.event_table_btn, 1, 2, 1, 1)
         self.addWidget(raw_plot_widget, 2, 0, 4, 4)
 
-        self.resized.connect(self.update_curves_size)
-
         self.cursor = pg.InfiniteLine(pos=0)
         self.plot.addItem(self.cursor)
 
@@ -550,16 +549,6 @@ class Raw_Data_Dock(Dock):
             curve = self.plot.plot(pen=(r,g,b))
             self.curves.append(curve)
         self.update_curves_size()
-        
-        self.timer = QtCore.QTimer()
-        self.timer.setInterval(self.timer_interval*1000)
-        self.timer.timeout.connect(self.update_raw_plot)
-        self.timer.start()
-        self.mode_btn.clicked.connect(self.raw_data_mode_handler)
-        self.ch_select_btn.clicked.connect(self.show_channel_select_window)
-        self.scale_adjust_btn.clicked.connect(self.show_scale_adjust_window)
-        self.event_table_btn.clicked.connect(self.show_event_table_window)
-        self.scroll.valueChanged.connect(self.update_curves_size)
 
         self.event_lines = list()
         for i in range(20):
@@ -571,6 +560,19 @@ class Raw_Data_Dock(Dock):
         self.eventTable = QtGui.QTableWidget()
         self.eventTable.setColumnCount(3)
         self.eventTable.setHorizontalHeaderLabels(['Time', 'Name', 'Duration'])
+
+    def setup_signal_handler(self):
+        self.resized.connect(self.update_curves_size)
+        self.mode_btn.clicked.connect(self.raw_data_mode_handler)
+        self.ch_select_btn.clicked.connect(self.show_channel_select_window)
+        self.scale_adjust_btn.clicked.connect(self.show_scale_adjust_window)
+        self.event_table_btn.clicked.connect(self.show_event_table_window)
+        self.scroll.valueChanged.connect(self.update_curves_size)
+
+        self.timer = QtCore.QTimer()
+        self.timer.setInterval(self.timer_interval*1000)
+        self.timer.timeout.connect(self.update_raw_plot)
+        self.timer.start()
 
     def update_curves_size(self):
         geo = self.plot.frameGeometry()
