@@ -654,17 +654,19 @@ class Raw_Data_Dock(Dock):
         self.scale_adjust_win.resize(500,100)
         gridlayout = QtGui.QGridLayout(self.scale_adjust_win)
 
-        self.slider = ScaleUI.Slider(self.ws_data.get_scale_line_rela_val(), 0, 5)
+        self.slider = ScaleUI.Slider(self.ws_data.get_scale_line_rela_val(),
+                                        1, 5)
 
-        scale_adjust_button_box = QtGui.QDialogButtonBox(QtCore.Qt.Horizontal,self.scale_adjust_win)
-        scale_adjust_button_box.addButton("Cancel", QtGui.QDialogButtonBox.RejectRole)
-        scale_adjust_button_box.addButton("Apply", QtGui.QDialogButtonBox.AcceptRole)
-        scale_adjust_button_box.accepted.connect(self.scale_adjust_handler)
-        scale_adjust_button_box.rejected.connect(self.scale_adjust_win.close)
+        button_box = QtGui.QDialogButtonBox(QtCore.Qt.Horizontal,
+                                            self.scale_adjust_win)
+        button_box.addButton("Cancel", QtGui.QDialogButtonBox.RejectRole)
+        button_box.addButton("Apply", QtGui.QDialogButtonBox.AcceptRole)
+
+        button_box.accepted.connect(self.scale_adjust_handler)
+        button_box.rejected.connect(self.scale_adjust_win.close)
 
         gridlayout.addWidget(self.slider,0,0)
-        gridlayout.addWidget(scale_adjust_button_box,1,0)
-
+        gridlayout.addWidget(button_box,1,0)
         self.scale_adjust_win.show()
     
     def scale_adjust_handler(self):
