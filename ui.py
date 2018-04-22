@@ -447,6 +447,42 @@ class WS_Data(object):
     def get_scale_line_rela_val(self):
         return self.scale_line_rela_val
 
+class Plot_Scale_Line(object):
+    def __init__(self, plot):
+        self.v_grid_lines = list()
+        for i in range(11):
+            grid_lines = pg.InfiniteLine(pos=i, pen=pg.mkPen(color=(192, 192, 192), style=QtCore.Qt.DotLine))
+            self.v_grid_lines.append(grid_lines)
+            plot.addItem(grid_lines)
+
+        self.zero_base_lines = list()
+        self.neg_base_lines = list()
+        self.pos_base_lines = list()
+        for i in range(1,65):
+            zero_line = pg.InfiniteLine(pos=i*10, angle=180, pen=(128, 128, 128))
+            neg_line = pg.InfiniteLine(pos=i*10 - 3, angle=180, pen=pg.mkPen(color=(80, 80, 80), style=QtCore.Qt.DotLine))
+            pos_line = pg.InfiniteLine(pos=i*10 + 3, angle=180, pen=pg.mkPen(color=(80, 80, 80), style=QtCore.Qt.DotLine))
+            self.zero_base_lines.append(zero_line)
+            self.neg_base_lines.append(neg_line)
+            self.pos_base_lines.append(pos_line)
+            plot.addItem(zero_line)
+            plot.addItem(neg_line)
+            plot.addItem(pos_line)
+
+    def update(self, selected_channels, axises_tick):
+        for idx, (val, label) in enumerate(axises_tick):
+            self.v_grid_lines[idx].setValue(val)
+        for i in range(64):
+            if i < len(selected_channels):
+                self.zero_base_lines[i].show()
+                self.neg_base_lines[i].show()
+                self.pos_base_lines[i].show()
+            else:
+                self.zero_base_lines[i].hide()
+                self.neg_base_lines[i].hide()
+                self.pos_base_lines[i].hide()
+                continue
+
 class Raw_Data_Dock(Dock):
     resized = QtCore.pyqtSignal()
     def __init__(self, url=None):
@@ -466,10 +502,10 @@ class Raw_Data_Dock(Dock):
         self.timer_interval = 0.1
         self.curve_size = 27 # 1080 / 2 / 20
         self.selected_channels = list(range(1, 65))
+        self.raw_data_mode = "Scan"
         self.init_ui()
 
     def init_ui(self):
-        self.raw_data_mode = "Scan"
         self.mode_btn = QtGui.QPushButton("Change to Scroll Mode")
         self.dtypeCombo = QtWidgets.QComboBox()
         self.dtypeCombo.setObjectName("dtypeCombo")
@@ -479,50 +515,34 @@ class Raw_Data_Dock(Dock):
         self.ch_select_btn = QtGui.QPushButton("Select Channels")
         self.scale_adjust_btn = QtGui.QPushButton("Adjust Scales")
         self.event_table_btn = QtGui.QPushButton("Show Events")
-        raw_plot_widget = QtGui.QWidget()
-        plot_layout = QtGui.QHBoxLayout()
-        plot_layout.setSpacing(0)
+
         self.plot = pg.PlotWidget()
         self.plot.setMouseEnabled(x= False, y= False)
         self.plot.setLimits(xMin=0, maxXRange=10)
         self.plot.enableAutoRange(x=True, y=False)
         self.scroll = QtGui.QScrollBar()
+
+        raw_plot_widget = QtGui.QWidget()
+        plot_layout = QtGui.QHBoxLayout(raw_plot_widget)
+        plot_layout.setSpacing(0)
         plot_layout.addWidget(self.plot)
         plot_layout.addWidget(self.scroll)
-        raw_plot_widget.setLayout(plot_layout)
+
         self.addWidget(self.mode_btn, 0, 0, 1, 1)
         self.addWidget(self.dtypeCombo, 0, 1, 1, 1)
         self.addWidget(self.ch_select_btn, 1, 0, 1, 1)
         self.addWidget(self.scale_adjust_btn, 1, 1, 1, 1)
         self.addWidget(self.event_table_btn, 1, 2, 1, 1)
         self.addWidget(raw_plot_widget, 2, 0, 4, 4)
+
         self.resized.connect(self.update_curves_size)
 
         self.cursor = pg.InfiniteLine(pos=0)
         self.plot.addItem(self.cursor)
 
-        self.tmp_ref_lines = list()
-        for i in range(11):
-            ref_line = pg.InfiniteLine(pos=i, pen=pg.mkPen(color=(192, 192, 192), style=QtCore.Qt.DotLine))
-            self.tmp_ref_lines.append(ref_line)
-            self.plot.addItem(ref_line)
-
-        self.zero_base_lines = list()
-        self.neg_base_lines = list()
-        self.pos_base_lines = list()
-        for i in range(1,65):
-            zero_line = pg.InfiniteLine(pos=i*10, angle=180, pen=(128, 128, 128))
-            neg_line = pg.InfiniteLine(pos=i*10 - 3, angle=180, pen=pg.mkPen(color=(80, 80, 80), style=QtCore.Qt.DotLine))
-            pos_line = pg.InfiniteLine(pos=i*10 + 3, angle=180, pen=pg.mkPen(color=(80, 80, 80), style=QtCore.Qt.DotLine))
-            self.zero_base_lines.append(zero_line)
-            self.neg_base_lines.append(neg_line)
-            self.pos_base_lines.append(pos_line)
-            self.plot.addItem(zero_line)
-            self.plot.addItem(neg_line)
-            self.plot.addItem(pos_line)
+        self.scale_lines = Plot_Scale_Line(self.plot)
             
         self.curves = list()
-
         for i in range(64):
             r = (i + 60 ) * 5 % 256
             g = (i + 2 ) * 7 % 256
@@ -594,19 +614,13 @@ class Raw_Data_Dock(Dock):
         axis = self.plot.getAxis("left")
         axis.setTicks([plot_data.axises_tick["left"]])
 
-        for idx, (val, label) in enumerate(plot_data.axises_tick["bottom"]):
-            self.tmp_ref_lines[idx].setValue(val)
+        self.scale_lines.update(self.selected_channels,
+                                plot_data.axises_tick["bottom"])
         for i in range(64):
             if i < len(self.selected_channels):
                 self.curves[i].show()
-                self.zero_base_lines[i].show()
-                self.neg_base_lines[i].show()
-                self.pos_base_lines[i].show()
             else:
                 self.curves[i].hide()
-                self.zero_base_lines[i].hide()
-                self.neg_base_lines[i].hide()
-                self.pos_base_lines[i].hide()
                 continue
 
             self.curves[i].setData(plot_data.time_data, plot_data.channel_data[i])
