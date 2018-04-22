@@ -675,7 +675,7 @@ class Raw_Data_Dock(Dock):
         self.channel_selector_win = QtGui.QDialog(self)
         self.channel_selector_win.setWindowTitle("Select Channels")
         self.channel_selector_win.resize(500,400)
-        gridlayout = QtGui.QGridLayout(self.channel_selector_win)
+        vlayout = QtGui.QVBoxLayout(self.channel_selector_win)
 
         self.channel_selector = QtGui.QListWidget()
         self.channel_selector.setSelectionMode(QtGui.QAbstractItemView.MultiSelection)
@@ -686,18 +686,22 @@ class Raw_Data_Dock(Dock):
             if i in self.selected_channels:
                 item.setSelected(True)
 
-        channel_selector_button_box = QtGui.QDialogButtonBox(QtCore.Qt.Horizontal,self.channel_selector_win)
-        channel_selector_button_box.addButton("Cancel", QtGui.QDialogButtonBox.RejectRole)
-        channel_selector_button_box.addButton("Apply", QtGui.QDialogButtonBox.AcceptRole)
-        deselect_all_btn = channel_selector_button_box.addButton("Deselect All", QtGui.QDialogButtonBox.ResetRole)
-        select_all_btn = channel_selector_button_box.addButton("Select All", QtGui.QDialogButtonBox.ActionRole)
-        channel_selector_button_box.accepted.connect(self.channel_select_handler)
-        channel_selector_button_box.rejected.connect(self.channel_selector_win.close)
-        deselect_all_btn.clicked.connect(self.select_none_channels)
+        button_box = QtGui.QDialogButtonBox(QtCore.Qt.Horizontal,
+                                            self.channel_selector_win)
+        button_box.addButton("Cancel", QtGui.QDialogButtonBox.RejectRole)
+        button_box.addButton("Apply", QtGui.QDialogButtonBox.AcceptRole)
+        clear_all_btn = button_box.addButton("Clear All",
+                                QtGui.QDialogButtonBox.ResetRole)
+        select_all_btn = button_box.addButton("Select All",
+                                QtGui.QDialogButtonBox.ActionRole)
+
+        button_box.accepted.connect(self.channel_select_handler)
+        button_box.rejected.connect(self.channel_selector_win.close)
+        clear_all_btn.clicked.connect(self.select_none_channels)
         select_all_btn.clicked.connect(self.select_all_channels)
 
-        gridlayout.addWidget(self.channel_selector,0,0)
-        gridlayout.addWidget(channel_selector_button_box,1,0)
+        vlayout.addWidget(self.channel_selector)
+        vlayout.addWidget(button_box)
         self.channel_selector_win.show()
 
     def channel_select_handler(self):
