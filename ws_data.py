@@ -280,9 +280,9 @@ class WS_Data(object):
         self.scale_line_real_val = scale_line_real_val
         self.data_window_height = data_window_height
         self.raw_plot_sample_rate = raw_plot_sample_rate
-        self.raw_data_time = list()
-        self.raw_data = list()
-        self.transed_raw_data = list()
+        self.decimated_data_time = list()
+        self.decimated_data = list()
+        self.transed_decimated_data = list()
 
         self.ws = websocket.WebSocketApp(url,
                                     on_message = self.on_message,
@@ -294,8 +294,8 @@ class WS_Data(object):
 
         self.events = list()
         for i in range(self.channel_num):
-            self.raw_data.append(list())
-            self.transed_raw_data.append(list())
+            self.decimated_data.append(list())
+            self.transed_decimated_data.append(list())
 
     def on_connect(self):
         while True:
@@ -310,7 +310,7 @@ class WS_Data(object):
         """
         raw = json.loads(message)
         try:
-            self.add_plot_raw_data(raw)
+            self.add_plot_decimated_data(raw)
         except Exception as e:
             logging.error(str(e))
 
@@ -326,7 +326,7 @@ class WS_Data(object):
         """
         pass
 
-    def add_plot_raw_data(self, data):
+    def add_plot_decimated_data(self, data):
         """
         Store the raw data plot data received from websocket, and store the
         transformed data.
@@ -338,10 +338,10 @@ class WS_Data(object):
 
         time = data['tick'] / self.raw_plot_sample_rate
 
-        self.raw_data_time.append(time)
+        self.decimated_data_time.append(time)
         for idx, ori_data in enumerate(data['data']['eeg']):
-            self.raw_data[idx].append(ori_data)
-            self.transed_raw_data[idx].append(self._tranform_data(ori_data))
+            self.decimated_data[idx].append(ori_data)
+            self.transed_decimated_data[idx].append(self._tranform_data(ori_data))
 
         if data['data']['event']:
             self.events.append({
@@ -351,7 +351,7 @@ class WS_Data(object):
                 'duration': data['data']['event']['duration']        
             })
 
-    def get_plot_raw_data(self, mode="Scan", channels=None, cursor=None):
+    def get_plot_decimated_data(self, mode="Scan", channels=None, cursor=None):
         """
         Return the raw data used to draw ``mode`` mode raw data plot
         The return value follow the order of channels.
@@ -381,7 +381,7 @@ class WS_Data(object):
         if channels is None:
             channels = range(1, self.channel_num+1)
 
-        data = Raw_Data_Plot_Data(self.raw_data_time, self.transed_raw_data, self.events,
+        data = Raw_Data_Plot_Data(self.decimated_data_time, self.transed_decimated_data, self.events,
                                     mode=mode, channels=channels,
                                     cursor=cursor)
 
@@ -389,11 +389,11 @@ class WS_Data(object):
 
     def clean_oudated_data(self, cursor):
         outdated_time = cursor - 11
-        while self.raw_data_time[0] < outdated_time:
-            self.raw_data_time.pop(0)
+        while self.decimated_data_time[0] < outdated_time:
+            self.decimated_data_time.pop(0)
             for i in range(self.channel_num):
-                self.raw_data[i].pop(0)
-                self.transed_raw_data[i].pop(0)
+                self.decimated_data[i].pop(0)
+                self.transed_decimated_data[i].pop(0)
         while len(self.events) != 0 and self.events[0]['tick'] / self.raw_plot_sample_rate < outdated_time:
             self.events.pop(0)
 
@@ -436,9 +436,9 @@ class WS_Data(object):
 
     def update_scale_line_rela_val(self, new_scale_line_rela_val):
         self.scale_line_rela_val = new_scale_line_rela_val
-        for idx_ch in range(len(self.raw_data)):
-            for idx_data in range(len(self.raw_data[idx_ch])):
-                self.transed_raw_data[idx_ch][idx_data] = self._tranform_data(self.raw_data[idx_ch][idx_data])
+        for idx_ch in range(len(self.decimated_data)):
+            for idx_data in range(len(self.decimated_data[idx_ch])):
+                self.transed_decimated_data[idx_ch][idx_data] = self._tranform_data(self.decimated_data[idx_ch][idx_data])
                              
     def get_scale_line_rela_val(self):
         return self.scale_line_rela_val

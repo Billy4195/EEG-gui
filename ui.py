@@ -165,13 +165,13 @@ class Raw_Data_Dock(Dock):
 
         if self.cursor_time is None:
             #TODO determine the start cursor_time
-            self.cursor_time = self.ws_data.raw_data_time[-1]
-        elif self.ws_data.raw_data_time[-1] - self.cursor_time > self.timer_interval:
+            self.cursor_time = self.ws_data.decimated_data_time[-1]
+        elif self.ws_data.decimated_data_time[-1] - self.cursor_time > self.timer_interval:
             self.cursor_time += self.timer_interval
         else:
-            self.cursor_time = self.ws_data.raw_data_time[-1]
+            self.cursor_time = self.ws_data.decimated_data_time[-1]
         tol_start = time.time()
-        plot_data = self.ws_data.get_plot_raw_data(mode=self.raw_data_mode,
+        plot_data = self.ws_data.get_plot_decimated_data(mode=self.raw_data_mode,
                             channels=self.selected_channels,
                             cursor=self.cursor_time)
         
