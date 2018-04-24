@@ -70,6 +70,8 @@ class Raw_Data_Dock(Dock):
         self.curve_size = 27 # 1080 / 2 / 20
         self.selected_channels = list(range(1, 65))
         self.raw_data_mode = "Scan"
+        #tmp
+        self.saving_file = False
         self.init_ui()
         self.setup_signal_handler()
 
@@ -83,6 +85,8 @@ class Raw_Data_Dock(Dock):
         self.ch_select_btn = QtGui.QPushButton("Select Channels")
         self.scale_adjust_btn = QtGui.QPushButton("Adjust Scales")
         self.event_table_btn = QtGui.QPushButton("Show Events")
+        #tmp
+        self.save_file_btn = QtGui.QPushButton("Save file")
 
         self.plot = pg.PlotWidget()
         self.plot.setMouseEnabled(x= False, y= False)
@@ -98,6 +102,8 @@ class Raw_Data_Dock(Dock):
 
         self.addWidget(self.mode_btn, 0, 0, 1, 1)
         self.addWidget(self.dtypeCombo, 0, 1, 1, 1)
+        #tmp
+        self.addWidget(self.save_file_btn, 0, 2, 1, 1)
         self.addWidget(self.ch_select_btn, 1, 0, 1, 1)
         self.addWidget(self.scale_adjust_btn, 1, 1, 1, 1)
         self.addWidget(self.event_table_btn, 1, 2, 1, 1)
@@ -135,6 +141,8 @@ class Raw_Data_Dock(Dock):
         self.scale_adjust_btn.clicked.connect(self.show_scale_adjust_window)
         self.event_table_btn.clicked.connect(self.show_event_table_window)
         self.scroll.valueChanged.connect(self.update_curves_size)
+        #tmp
+        self.save_file_btn.clicked.connect(self.save_btn_handler)
 
         self.timer = QtCore.QTimer()
         self.timer.setInterval(self.timer_interval*1000)
@@ -162,7 +170,8 @@ class Raw_Data_Dock(Dock):
     def update_raw_plot(self):
         if not self.ws_data.ws.sock or not self.ws_data.ws.sock.connected:
             return
-
+        if not self.ws_data.decimated_data_time:
+            return
         if self.cursor_time is None:
             #TODO determine the start cursor_time
             self.cursor_time = self.ws_data.decimated_data_time[-1]
@@ -316,6 +325,16 @@ class Raw_Data_Dock(Dock):
         scroll_change = -(event.angleDelta().y() // 120)
         scroll_val = self.scroll.value()
         self.scroll.setValue(scroll_val + scroll_change)
+
+    def save_btn_handler(self):
+        if not self.saving_file:
+            self.ws_data.open_raw_record_file("tmp.csv")
+            self.saving_file = True
+            self.save_file_btn.setText("Stop saving")
+        else:
+            self.ws_data.close_raw_record_file()
+            self.saving_file = False
+            self.save_file_btn.setText("Save file")
 
 class EEG_Application(QtGui.QApplication):
     def __init__(self):
