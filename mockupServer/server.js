@@ -215,24 +215,27 @@ class Server {
                 }
             }
         } else if (PT === "DEC") {
-            let currentEvent = null;
+            let currentEvent = {};
             if (this.decEvent) {
-                console.log("testEvent@", this.tick.toString());
                 currentEvent = {
-                    name: "testEvent@" + this.tick.toString(),
-                    duration: 10
+                    event_id: this.tick,
+                    event_duration: 10
                 }
                 this.decEvent = false;
             }
             return {
-                name: "dec",
-                type: "raw",
-                tick: this.tick,
-                data: {
-                    eeg: Array(this.serverParams.chNum).fill(Math.sin(this.coe)),
+                type: {
+                    type: "data",
+                    source_tpye: "algorithm",
+                    source_name: "decimation"
+                },
+                name: null,
+                contents: {
+                    sync_tick: this.tick,
+                    data: Array(this.serverParams.chNum).fill(Math.sin(this.coe)),
                     event: currentEvent
                 }
-            };
+            }
         } else {
             console.log("PT error:", PT);
         }

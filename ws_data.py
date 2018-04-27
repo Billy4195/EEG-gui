@@ -325,9 +325,9 @@ class WS_Data(object):
                 self.add_plot_decimated_data(raw)
                 return
             if raw["type"]["type"] == "data":
-                if raw["type"]["source_type"] == "raw":
+                if raw["type"]["source_name"] == "raw":
                     self.add_raw_data(raw)
-                elif raw["type"]["source_type"] == "algorithm":
+                elif raw["type"]["source_name"] == "decimation":
                     self.add_plot_decimated_data(raw)
             else:
                 pass
@@ -353,23 +353,24 @@ class WS_Data(object):
 
         The transformation is to let original data fit into specific scale.
         """
-        if len(data['data']['eeg']) != self.channel_num:
+        if len(data['contents']['data']) != self.channel_num:
             raise AssertionError("The received raw data unmatch channel num")
 
-        time = data['tick'] / self.raw_plot_sample_rate
+        time = data['contents']['sync_tick'] / self.raw_plot_sample_rate
 
         self.decimated_data_time.append(time)
-        for idx, ori_data in enumerate(data['data']['eeg']):
+        for idx, ori_data in enumerate(data['contents']['data']):
             self.decimated_data[idx].append(ori_data)
             self.transed_decimated_data[idx].append(self._tranform_data(ori_data))
 
-        if data['data']['event']:
+        if data['contents']['event'].get('event_id', None) is not None:
             self.events.append({
-                'tick': data['tick'],
+                'tick': data['contents']['sync_tick'],
                 'time': time,
-                'name': data['data']['event']['name'],
-                'duration': data['data']['event']['duration']        
+                'name': data['contents']['event']['event_id'],
+                'duration': data['contents']['event']['event_duration']        
             })
+
 
     def get_plot_decimated_data(self, mode="Scan", channels=None, cursor=None):
         """
