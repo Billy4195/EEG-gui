@@ -63,7 +63,9 @@ class Server {
             console.log("Client Connected");
 
             ws.on("message", (msg) => {
-                this.processMsg(ws, msg);
+                console.log("!!");
+                console.log(msg);
+                this.processMsg(ws, JSON.parse(msg));
             });
             ws.on("close", () => {
                 console.log("Client Disconnect");
@@ -71,23 +73,23 @@ class Server {
                 this.clientState.decimation.phase = "WAIT_SET";
             });        
             //////////////////////////////////////////////
-            this.clientState.raw.phase = "STREAM";
-            this.clientState.decimation.phase = "STREAM";
+            //this.clientState.raw.phase = "STREAM";
+            //this.clientState.decimation.phase = "STREAM";
             //This part is temporary
             //////////////////////////////////////////////
             const sendDecimate = () => {
                 if (this.clientState.decimation.phase === "STREAM") {
-                    setTimeout(sendDecimate, this.clientState.decimation.decimateNum);
+                    ws.send(JSON.stringify(this.genPacket("DEC")));
                 }
-                ws.send(JSON.stringify(this.genPacket("DEC")));
+                setTimeout(sendDecimate, this.clientState.decimation.decimateNum);
             }
             setTimeout(sendDecimate, this.clientState.decimation.decimateNum);
 
             const sendRaw = () => {
                 if (this.clientState.raw.phase === "STREAM") {
-                    setTimeout(sendRaw, this.clientState.raw.chunkSize);
+                    ws.send(JSON.stringify(this.genPacket("RAW")));
                 }
-                ws.send(JSON.stringify(this.genPacket("RAW")));
+                setTimeout(sendRaw, this.clientState.raw.chunkSize);
             }
             setTimeout(sendRaw, this.clientState.raw.chunkSize);
         });
@@ -123,7 +125,7 @@ class Server {
     }
     sendRes(PT, resType, ws) {
         if (PT === "raw" && resType === "ack") {
-            ws.send({
+            ws.send(JSON.stringify({
                 type: {
                     type: resType,
                     source_type: PT,
@@ -133,9 +135,9 @@ class Server {
                 contents: {
                     result: true
                 }
-            });
+            }));
         } else if (PT === "raw" && resType === "response") {
-            ws.send({
+            ws.send(JSON.stringify({
                 type: {
                     type: resType,
                     source_type: PT,
@@ -148,9 +150,9 @@ class Server {
                     ch_num: this.serverParams.chNum,
                     chunk_size: this.clientState.raw.chunkSize
                 }
-            });
+            }));
         } else if (PT === "decimation" && resType === "ack") {
-            ws.send({
+            ws.send(JSON.stringify({
                 type: {
                     type: resType,
                     source_type: "algorithm",
@@ -160,9 +162,9 @@ class Server {
                 contents: {
                     result: true
                 }
-            });
+            }));
         } else if (PT === "decimation" && resType === "response") {
-            ws.send({
+            ws.send(JSON.stringify({
                 type: {
                     type: resType,
                     source_type: "algorithm",
@@ -175,7 +177,7 @@ class Server {
                     ch_num: this.serverParams.chNum,
                     chunk_size: this.clientState.raw.chunkSize
                 }
-            });
+            }));
         }
     }
     genPacket(PT) {

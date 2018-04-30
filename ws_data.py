@@ -6,7 +6,7 @@ import json
 import logging
 import copy
 import csv
-
+from time import sleep
 import websocket
 
 
@@ -296,6 +296,71 @@ class WS_Data(object):
         self.ws_thread = threading.Thread(target=self.on_connect)
         self.ws_thread.daemon = True
         self.ws_thread.start()
+        while not self.ws.sock.connected:
+            sleep(1)
+        raw_setting_msg = json.dumps({
+            "type": {
+                "type": "setting",
+                "target_tpye": "raw",
+                "target_name": "raw"
+            },
+            "name": None,
+            "contents": {
+                "enable": True,
+                "chunk_size": 4
+            }
+        })
+        raw_request_msg = json.dumps({
+            "type": {
+                "type": "request",
+                "target_tpye": "raw",
+                "target_name": "raw"
+            },
+            "name": None,
+            "contents": {
+                "requirement": [
+                    "enable",
+                    "sps_origin",
+                    "ch_num",
+                    "chunk_size",
+                    "ch_label"
+                ]
+            }
+        })
+        dec_setting_msg = json.dumps({
+            "type": {
+                "type": "setting",
+                "target_tpye": "algorithm",
+                "target_name": "decimation"
+            },
+            "name": None,
+            "contents": {
+                "enable": True,
+                "decimate_num": 4
+            }
+        })
+        dec_request_msg = json.dumps({
+            "type": {
+                "type": "request",
+                "target_tpye": "algorithm",
+                "target_name": "decimation"
+            },
+            "name": None,
+            "contents": {
+                "requirement": [
+                    "enable",
+                    "sps_origin",
+                    "sps_decimated",
+                    "decimate_num",
+                    "ch_num",
+                    "ch_label"
+                ]
+            }
+        })
+        self.ws.send(raw_setting_msg)
+        self.ws.send(raw_request_msg)
+        self.ws.send(dec_setting_msg)
+        self.ws.send(dec_request_msg)
 
         self.events = list()
         for i in range(self.channel_num):
@@ -308,12 +373,12 @@ class WS_Data(object):
         self.file_pointer = None
         self.csv_writer = None
 
-    def on_connect(self):
+    def on_connect(self):    
         while True:
             self.ws.run_forever()
             logging.error("Connection closed reconnect in 0.5 sec")
             time.sleep(0.5)
-
+        
     def on_message(self, ws, message):
         """
         Handle data from socket and store it into different plot's data
@@ -321,9 +386,6 @@ class WS_Data(object):
         """
         try:
             raw = json.loads(message)
-            if raw.get("data", None):
-                self.add_plot_decimated_data(raw)
-                return
             if raw["type"]["type"] == "data":
                 if raw["type"]["source_name"] == "raw":
                     self.add_raw_data(raw)
