@@ -1,3 +1,6 @@
+__author__ = "kirintw and Billy Su"
+__license__ = "GPL-2.0"
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QLabel, QSlider, QWidget
 from PyQt5 import QtGui

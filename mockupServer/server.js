@@ -1,3 +1,7 @@
+/*
+__author__ = "kirintw and Billy Su"
+__license__ = "GPL-2.0"
+*/
 const wsServer = require("uws").Server;
 
 class Server {

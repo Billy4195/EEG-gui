@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+__author__ = "kirintw and Billy Su"
+__license__ = "GPL-2.0"
+
 import pyqtgraph as pg
 from pyqtgraph.dockarea import *
 from PyQt5 import QtCore, QtGui, QtWidgets
