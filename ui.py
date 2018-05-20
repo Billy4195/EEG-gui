@@ -14,7 +14,6 @@ import json
 import logging
 import math
 import copy
-import ScaleUI
 from ws_data import WS_Data
 from raw_data_plot import Raw_Data_Plot
 

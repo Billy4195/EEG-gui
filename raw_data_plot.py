@@ -4,6 +4,7 @@ import pyqtgraph as pg
 from pyqtgraph.dockarea import *
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+import ScaleUI
 from ws_data import WS_Data
 from scale_line import Plot_Scale_Line
 
