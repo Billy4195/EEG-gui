@@ -78,6 +78,8 @@ class WS_Data(object):
         self.raw_cache_size = 1000
         self.file_pointer = None
         self.csv_writer = None
+        self.cursor = None
+        self.update_time_interval = 0.1
 
     def on_connect(self):    
         while True:
@@ -139,8 +141,10 @@ class WS_Data(object):
                 'duration': data['contents']['event']['event_duration']        
             })
 
+        if self.cursor is not None and (self.decimated_data_time[-1] - self.cursor) > self.update_time_interval:
+            self.cursor = self.decimated_data_time[-1]
 
-    def get_plot_decimated_data(self, mode="Scan", channels=None, cursor=None):
+    def get_plot_decimated_data(self, mode="Scan", channels=None):
         """
         Return the raw data used to draw ``mode`` mode raw data plot
         The return value follow the order of channels.
@@ -164,15 +168,15 @@ class WS_Data(object):
         Return:
         Instance of the ``Raw_Data_Plot_Data`` class
         """
-        if cursor is None:
+        if self.cursor is None:
             raise AssertionError("Scan mode should provide `cursor`")
 
         if channels is None:
             channels = range(1, self.channel_num+1)
 
-        data = Raw_Data_Plot_Data(self.decimated_data_time, self.transed_decimated_data, self.events,
-                                    mode=mode, channels=channels,
-                                    cursor=cursor)
+        data = Raw_Data_Plot_Data(self.decimated_data_time, self.transed_decimated_data,
+                                    self.events,mode=mode, channels=channels,
+                                    cursor=self.cursor)
 
         return data
 

@@ -24,11 +24,11 @@ class Raw_Data_Plot(QtGui.QWidget):
 
         self.setWindowTitle("Decimated Data Plot")
         self.ws_data = WS_Data(url=ws_url)
-        self.cursor_time = None
         self.timer_interval = 0.1
         self.curve_size = 27 # 1080 / 2 / 20
         self.selected_channels = list(range(1, 65))
         self.raw_data_mode = "Scan"
+        self.last_cursor = 0
         #tmp
         self.saving_file = False
         self.init_ui()
@@ -133,17 +133,17 @@ class Raw_Data_Plot(QtGui.QWidget):
             return
         if not self.ws_data.decimated_data_time:
             return
-        if self.cursor_time is None:
-            #TODO determine the start cursor_time
-            self.cursor_time = self.ws_data.decimated_data_time[-1]
-        elif self.ws_data.decimated_data_time[-1] - self.cursor_time > self.timer_interval:
-            self.cursor_time += self.timer_interval
-        else:
-            self.cursor_time = self.ws_data.decimated_data_time[-1]
+
+        cursor_time = self.ws_data.cursor
+        if cursor_time is None:
+            self.ws_data.cursor = 0
+            return
+        if cursor_time <= self.last_cursor:
+            return
+
         tol_start = time.time()
         plot_data = self.ws_data.get_plot_decimated_data(mode=self.raw_data_mode,
-                            channels=self.selected_channels,
-                            cursor=self.cursor_time)
+                            channels=self.selected_channels)
         
         for i in range(len(self.event_lines)):
             self.event_lines[i].hide()
@@ -169,10 +169,11 @@ class Raw_Data_Plot(QtGui.QWidget):
             self.event_lines[idx].show()
 
         self.plot.setTitle("FPS: {:.1f}".format(1/(time.time()-tol_start)))
-        self.cursor.setValue(self.cursor_time % 10)
-        self.ws_data.clean_oudated_data(self.cursor_time)
+        self.cursor.setValue(cursor_time % 10)
+        self.ws_data.clean_oudated_data(cursor_time)
 
         self.update_event_table()
+        self.last_cursor = cursor_time
 
     def raw_data_mode_handler(self):
         if self.raw_data_mode == "Scan":
