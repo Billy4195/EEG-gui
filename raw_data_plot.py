@@ -1,3 +1,4 @@
+#! python3
 import time
 
 import pyqtgraph as pg
