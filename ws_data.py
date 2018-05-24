@@ -55,19 +55,6 @@ class WS_Data(object):
         self.raw_data_events = list()
         self.raw_sample_rate = 1000 #TODO ask from web socket
 
-        self.ws = websocket.WebSocketApp(url,
-                                    on_message = self.on_message,
-                                    on_error = self.on_error,
-                                    on_close = self.on_close)
-        self.ws_thread = threading.Thread(target=self.on_connect)
-        self.ws_thread.daemon = True
-        self.ws_thread.start()
-
-        while not self.ws.sock.connected:
-            sleep(1)
-
-        self.send_init_commands()
-
         self.events = list()
         for i in range(self.channel_num):
             self.decimated_data.append(list())
@@ -80,6 +67,19 @@ class WS_Data(object):
         self.csv_writer = None
         self.cursor = None
         self.update_time_interval = 0.1
+
+        self.ws = websocket.WebSocketApp(url,
+                                    on_message = self.on_message,
+                                    on_error = self.on_error,
+                                    on_close = self.on_close)
+        self.ws_thread = threading.Thread(target=self.on_connect)
+        self.ws_thread.daemon = True
+        self.ws_thread.start()
+
+        while not self.ws.sock.connected:
+            sleep(1)
+
+        self.send_init_commands()
 
     def on_connect(self):    
         while True:

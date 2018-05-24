@@ -297,3 +297,8 @@ class Raw_Data_Plot(QtGui.QWidget):
             self.ws_data.close_raw_record_file()
             self.saving_file = False
             self.save_file_btn.setText("Save file")
+
+if __name__ == "__main__":
+    app = QtGui.QApplication([])
+    plot = Raw_Data_Plot()
+    app.exec_()
