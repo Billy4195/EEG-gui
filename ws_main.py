@@ -6,7 +6,8 @@ import tornado.web
 import tornado.websocket
 import tornado.httpserver
 import tornado.ioloop
-
+import asyncio
+import logging
 
 class WS_CLIENT(object):
     def __init__(self, url):
@@ -127,8 +128,6 @@ class WS_CLIENT(object):
         self.ws.send(dec_setting_msg)
         self.ws.send(dec_request_msg)
 
-    def get_dec_packet(self):
-        return self.raw_data_msg.pop(0)
 
 
 class WS_SERVER(object):
@@ -142,6 +141,7 @@ class WS_SERVER(object):
         self.server_thread.start()
 
     def start_server(self):
+        asyncio.set_event_loop(asyncio.new_event_loop())
         self.ws_app.listen(self.port)
         tornado.ioloop.IOLoop.instance().start()
 
@@ -160,7 +160,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             if cmd["type"] == "dec":
                 print("start sending!")
                 self.loop = tornado.ioloop.PeriodicCallback(
-                    self.send_dec, 1, io_loop=tornado.ioloop.IOLoop.instance())
+                    self.send_dec, 5)
                 self.loop.start()
             else:
                 pass
@@ -171,6 +171,13 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         pass
 
     def send_dec(self):
-        while(self.ws_client.decimated_data_msg):
-            packet = self.ws_client.get_dec_packet()
-            self.write_message(packet)
+        while(1):
+            try:
+                if self.ws_client.decimated_data_msg:
+                    packet = self.ws_client.decimated_data_msg.pop(0)
+                    self.write_message(packet)
+                else:
+                    return
+            except Exception as e:
+                print(e)
+                return
