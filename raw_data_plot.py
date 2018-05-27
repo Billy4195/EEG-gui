@@ -19,7 +19,7 @@ class Raw_Data_Plot(QtGui.QWidget):
         super().__init__()
 
         if url is None:
-            ws_url = "ws://localhost:8888"
+            ws_url = "ws://localhost:7777"
         else:
             ws_url = url
 

@@ -1,0 +1,176 @@
+import time
+import threading
+import json
+import websocket
+import tornado.web
+import tornado.websocket
+import tornado.httpserver
+import tornado.ioloop
+
+
+class WS_CLIENT(object):
+    def __init__(self, url):
+        self.url = url
+        self.raw_data_msg = list()
+        self.decimated_data_msg = list()
+
+        self.ws = websocket.WebSocketApp(url,
+                                         on_message=self.on_message,
+                                         on_error=self.on_error,
+                                         on_close=self.on_close)
+        self.ws_thread = threading.Thread(target=self.on_connect)
+        self.ws_thread.daemon = True
+        self.ws_thread.start()
+        while not self.ws.sock.connected:
+            time.sleep(1)
+
+        self.send_init_commands()
+
+    def on_connect(self):
+        while True:
+            self.ws.run_forever()
+            logging.error("Connection closed reconnect in 0.5 sec")
+            time.sleep(0.5)
+
+    def on_message(self, ws, message):
+        """
+        Handle data from socket and store it into different plot's data
+        structure
+        """
+        try:
+            raw = json.loads(message)
+            if raw["type"]["type"] == "data":
+                if raw["type"]["source_name"] == "raw":
+                    #self.raw_data_msg.append(message)
+                    pass
+                elif raw["type"]["source_name"] == "decimation":
+                    self.decimated_data_msg.append(message)
+            else:
+                pass
+        except Exception as e:
+            logging.error(str(e))
+
+    def on_error(self, ws, error):
+        """
+        Handle websocket error
+        """
+        pass
+
+    def on_close(self, ws):
+        """
+        Handle websocket close event
+        """
+        pass
+
+    def send_init_commands(self):
+        raw_setting_msg = json.dumps({
+            "type": {
+                "type": "setting",
+                "target_tpye": "raw",
+                "target_name": "raw"
+            },
+            "name": None,
+            "contents": {
+                "enable": True,
+                "chunk_size": 4
+            }
+        })
+        raw_request_msg = json.dumps({
+            "type": {
+                "type": "request",
+                "target_tpye": "raw",
+                "target_name": "raw"
+            },
+            "name": None,
+            "contents": {
+                "requirement": [
+                    "enable",
+                    "sps_origin",
+                    "ch_num",
+                    "chunk_size",
+                    "ch_label"
+                ]
+            }
+        })
+        dec_setting_msg = json.dumps({
+            "type": {
+                "type": "setting",
+                "target_tpye": "algorithm",
+                "target_name": "decimation"
+            },
+            "name": None,
+            "contents": {
+                "enable": True,
+                "decimate_num": 4
+            }
+        })
+        dec_request_msg = json.dumps({
+            "type": {
+                "type": "request",
+                "target_tpye": "algorithm",
+                "target_name": "decimation"
+            },
+            "name": None,
+            "contents": {
+                "requirement": [
+                    "enable",
+                    "sps_origin",
+                    "sps_decimated",
+                    "decimate_num",
+                    "ch_num",
+                    "ch_label"
+                ]
+            }
+        })
+        self.ws.send(raw_setting_msg)
+        self.ws.send(raw_request_msg)
+        self.ws.send(dec_setting_msg)
+        self.ws.send(dec_request_msg)
+
+    def get_dec_packet(self):
+        return self.raw_data_msg.pop(0)
+
+
+class WS_SERVER(object):
+    def __init__(self, ws_client, port):
+        self.port = port
+        self.ws_app = tornado.web.Application([
+            (r"/", WebSocketHandler, {'ws_client': ws_client})
+        ])
+        self.server_thread = threading.Thread(target=self.start_server)
+        self.server_thread.daemon = True
+        self.server_thread.start()
+
+    def start_server(self):
+        self.ws_app.listen(self.port)
+        tornado.ioloop.IOLoop.instance().start()
+
+
+class WebSocketHandler(tornado.websocket.WebSocketHandler):
+    def initialize(self, ws_client):
+        self.ws_client = ws_client
+
+    def check_origin(self, origin):
+        return True
+
+    def on_message(self, message):
+        #self.write_message(u"Your message was: "+message)
+        try:
+            cmd = json.loads(message)
+            if cmd["type"] == "dec":
+                print("start sending!")
+                self.loop = tornado.ioloop.PeriodicCallback(
+                    self.send_dec, 1, io_loop=tornado.ioloop.IOLoop.instance())
+                self.loop.start()
+            else:
+                pass
+        except Exception as e:
+            logging.error(str(e))
+
+    def on_close(self):
+        pass
+
+    def send_dec(self):
+        while(self.ws_client.decimated_data_msg):
+            packet = self.ws_client.get_dec_packet()
+            self.write_message(packet)

@@ -323,66 +323,8 @@ class WS_Data(object):
         self.csv_writer = None
 
     def send_init_commands(self):
-        raw_setting_msg = json.dumps({
-            "type": {
-                "type": "setting",
-                "target_tpye": "raw",
-                "target_name": "raw"
-            },
-            "name": None,
-            "contents": {
-                "enable": True,
-                "chunk_size": 4
-            }
-        })
-        raw_request_msg = json.dumps({
-            "type": {
-                "type": "request",
-                "target_tpye": "raw",
-                "target_name": "raw"
-            },
-            "name": None,
-            "contents": {
-                "requirement": [
-                    "enable",
-                    "sps_origin",
-                    "ch_num",
-                    "chunk_size",
-                    "ch_label"
-                ]
-            }
-        })
         dec_setting_msg = json.dumps({
-            "type": {
-                "type": "setting",
-                "target_tpye": "algorithm",
-                "target_name": "decimation"
-            },
-            "name": None,
-            "contents": {
-                "enable": True,
-                "decimate_num": 4
-            }
+            "type": "dec"
         })
-        dec_request_msg = json.dumps({
-            "type": {
-                "type": "request",
-                "target_tpye": "algorithm",
-                "target_name": "decimation"
-            },
-            "name": None,
-            "contents": {
-                "requirement": [
-                    "enable",
-                    "sps_origin",
-                    "sps_decimated",
-                    "decimate_num",
-                    "ch_num",
-                    "ch_label"
-                ]
-            }
-        })
-        self.ws.send(raw_setting_msg)
-        self.ws.send(raw_request_msg)
         self.ws.send(dec_setting_msg)
-        self.ws.send(dec_request_msg)
+

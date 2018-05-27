@@ -15,12 +15,16 @@ import json
 import logging
 import math
 import copy
-from ws_data import WS_Data
+from ws_main import WS_CLIENT, WS_SERVER
 from raw_data_plot import Raw_Data_Plot
 
 class EEG_Application(QtGui.QApplication):
     def __init__(self):
         super().__init__([])
+        ws_url = "ws://localhost:8888"
+        self.ws_client = WS_CLIENT(url=ws_url)
+        self.ws_server = WS_SERVER(ws_client=self.ws_client, port=7777)
+
         self.main_win = QtGui.QMainWindow()
         self.main_win.show()
 
