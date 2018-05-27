@@ -54,6 +54,7 @@ class WS_Data(object):
         self.raw_data_ticks = list()
         self.raw_data_events = list()
         self.raw_sample_rate = 1000 #TODO ask from web socket
+        self.plot_origin = None
 
         self.events = list()
         for i in range(self.channel_num):
@@ -176,7 +177,7 @@ class WS_Data(object):
 
         data = Raw_Data_Plot_Data(self.decimated_data_time, self.transed_decimated_data,
                                     self.events,mode=mode, channels=channels,
-                                    cursor=self.cursor)
+                                    cursor=self.cursor,plot_origin=self.plot_origin)
 
         return data
 

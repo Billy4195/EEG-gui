@@ -139,6 +139,11 @@ class Raw_Data_Plot(QtGui.QWidget):
         if cursor_time is None:
             self.ws_data.cursor = 0
             return
+
+        # init plot origin
+        if self.ws_data.plot_origin is None:
+            self.ws_data.plot_origin = cursor_time
+
         if cursor_time <= self.last_cursor:
             return
 
@@ -170,7 +175,7 @@ class Raw_Data_Plot(QtGui.QWidget):
             self.event_lines[idx].show()
 
         self.plot.setTitle("FPS: {:.1f}".format(1/(time.time()-tol_start)))
-        self.cursor.setValue(cursor_time % 10)
+        self.cursor.setValue(plot_data.cursor)
         self.ws_data.clean_oudated_data(cursor_time)
 
         self.update_event_table()
