@@ -17,6 +17,8 @@ import math
 import copy
 from ws_main import WS_CLIENT, WS_SERVER
 from raw_data_plot import Raw_Data_Plot
+import os
+from timer import TimeThread
 
 class EEG_Application(QtGui.QApplication):
     def __init__(self):
@@ -31,6 +33,7 @@ class EEG_Application(QtGui.QApplication):
         self.decimated_plot_proc = None
         self.setupUi()
         self.setupSignals()
+        self.state = "IDLE"
 
     def setupUi(self):
         """Create Basic UI layout"""
@@ -145,10 +148,14 @@ class EEG_Application(QtGui.QApplication):
         boxlayout.addWidget(self.log_widget)
 
         groupBox.setLayout(boxlayout)
+        self.recording_group = groupBox
         return groupBox
 
     def setupSignals(self):
         self.signal_btn.clicked.connect(self.decimated_handler)
+        self.record_btn.clicked.connect(self.start_recording)
+        self.stop_btn.clicked.connect(self.stop_recording)
+        self.file_path_select_btn.clicked.connect(self.select_file_path)
 
     def decimated_handler(self):
         if self.decimated_plot_proc:
@@ -159,3 +166,49 @@ class EEG_Application(QtGui.QApplication):
         except Exception as e:
             self.decimated_plot_proc.kill()
             logging.error(str(e))
+
+    def start_recording(self):
+        if self.state == "IDLE":
+            if self.file_path_input.text() == "":
+                default_path = os.path.join(os.path.expanduser("~"),"ArtiseBio")
+                while os.path.isdir(default_path):
+                    os.mkdir(default_path)
+                self.file_path_input.setText(default_path)
+
+            #set default filename
+            if self.file_name_input.text() == "":
+                timestamp = time.strftime("%y%m%d%H%M%S")
+                default_filename = timestamp
+                self.file_name_input.setText(default_filename)
+            else:
+                timestamp = time.strftime("%H%M%S")
+                self.file_name_input.setText(self.file_name_input.text() + "_" + timestamp)
+
+            file_path = os.path.join(self.file_path_input.text(), self.file_name_input.text()+self.file_type.currentText())
+            self.ws_client.open_raw_record_file(file_path)
+            self.state = "RECORDING"
+            self.time_t = TimeThread()
+            self.time_t.signal_time.connect(self.update_elapsed_time)
+            self.time_t.start_timer()
+        elif self.state == "RECORDING":
+            pass
+
+    def stop_recording(self):
+        if self.state == "RECORDING":
+            self.time_t.stop()
+            self.state = "IDLE"
+            self.record_btn.setText("Start Recording")
+            self.file_name_input.setText("")
+            self.ws_client.close_raw_record_file()
+        elif self.state == "IDLE":
+            pass
+
+    def select_file_path(self):
+        file_path = str(QtGui.QFileDialog.getExistingDirectory(self.recording_group, "Select Directory"))
+        if file_path == '':
+            return
+        self.file_path_input.setText(file_path)
+
+    def update_elapsed_time(self, timestamp):
+        if self.state == "RECORDING":
+            self.record_btn.setText("Elapsed Time "+ "{:.2f}".format(float(timestamp)))
