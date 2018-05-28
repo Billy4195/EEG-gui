@@ -168,7 +168,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             logging.error(str(e))
 
     def on_close(self):
-        pass
+        self.loop.stop()
 
     def send_dec(self):
         while(1):
@@ -179,5 +179,5 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
                 else:
                     return
             except Exception as e:
-                print(e)
+                logging.error(str(e))
                 return

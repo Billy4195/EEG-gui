@@ -157,4 +157,5 @@ class EEG_Application(QtGui.QApplication):
         try:
             self.decimated_plot_proc = Popen(['python', 'raw_data_plot.py'])
         except Exception as e:
-            print(e)
+            self.decimated_plot_proc.kill()
+            logging.error(str(e))
