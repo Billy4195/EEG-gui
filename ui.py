@@ -153,6 +153,7 @@ class EEG_Application(QtGui.QApplication):
 
     def setupSignals(self):
         self.signal_btn.clicked.connect(self.decimated_handler)
+        self.contact_btn.clicked.connect(self.contact_handler)
         self.record_btn.clicked.connect(self.start_recording)
         self.stop_btn.clicked.connect(self.stop_recording)
         self.file_path_select_btn.clicked.connect(self.select_file_path)
@@ -165,6 +166,17 @@ class EEG_Application(QtGui.QApplication):
             self.decimated_plot_proc = Popen(['python', 'raw_data_plot.py'])
         except Exception as e:
             self.decimated_plot_proc.kill()
+            logging.error(str(e))
+
+    def contact_handler(self):
+        if self.contact_plt_proc:
+            if self.contact_plot_proc.poll() is None:
+                return
+
+        try:
+            self.contact_plot_proc = Popen(['python', 'contact_plot.py'])
+        except Exception as e:
+            self.contact_plot_proc.kill()
             logging.error(str(e))
 
     def start_recording(self):
