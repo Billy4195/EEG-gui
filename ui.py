@@ -31,6 +31,7 @@ class EEG_Application(QtGui.QApplication):
         self.main_win.show()
 
         self.decimated_plot_proc = None
+        self.contact_plot_proc = None
         self.setupUi()
         self.setupSignals()
         self.state = "IDLE"
@@ -169,7 +170,7 @@ class EEG_Application(QtGui.QApplication):
             logging.error(str(e))
 
     def contact_handler(self):
-        if self.contact_plt_proc:
+        if self.contact_plot_proc:
             if self.contact_plot_proc.poll() is None:
                 return
 

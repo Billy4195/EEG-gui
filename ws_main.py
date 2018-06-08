@@ -23,6 +23,7 @@ class WS_CLIENT(object):
         self.raw_sample_rate = 1000 #TODO ask from web socket
 
         self.decimated_data_msg = list()
+        self.impedance_data_msg = list()
 
         self.ws = websocket.WebSocketApp(url,
                                          on_message=self.on_message,
@@ -54,6 +55,8 @@ class WS_CLIENT(object):
                     self.add_raw_data(raw)
                 elif raw["type"]["source_name"] == "decimation":
                     self.decimated_data_msg.append(message)
+                elif raw["type"]["source_name"] == "impedance":
+                    self.impedance_data_msg.append(message)
             else:
                 pass
         except Exception as e:
@@ -131,10 +134,37 @@ class WS_CLIENT(object):
                 ]
             }
         })
+        imp_setting_msg = json.dumps({
+            "type": {
+                "type": "setting",
+                "target_tpye": "device",
+                "target_name": "impedance"
+            },
+            "name": None,
+            "contents": {
+                "enable": True
+            }            
+        })
+        imp_request_msg = json.dumps({
+            "type": {
+                "type": "request",
+                "target_tpye": "device",
+                "target_name": "impedance"
+            },           
+            "name": None,
+            "contents": [
+                "enable",
+                "sps_origin",
+                "ch_num",
+                "ch_label"
+            ]                
+        })
         self.ws.send(raw_setting_msg)
         self.ws.send(raw_request_msg)
         self.ws.send(dec_setting_msg)
         self.ws.send(dec_request_msg)
+        self.ws.send(imp_setting_msg)
+        self.ws.send(imp_request_msg)
 
     def add_raw_data(self, data):
         if self.recording_data:
@@ -238,6 +268,9 @@ class WS_SERVER(object):
 
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
+    dec_client = None
+    imp_client = None
+
     def initialize(self, ws_client):
         self.ws_client = ws_client
 
@@ -249,23 +282,45 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         try:
             cmd = json.loads(message)
             if cmd["type"] == "dec":
-                print("start sending!")
-                self.loop = tornado.ioloop.PeriodicCallback(
+                self.dec_client = self
+                self.dec_loop = tornado.ioloop.PeriodicCallback(
                     self.send_dec, 5)
-                self.loop.start()
+                self.dec_loop.start()
+            elif cmd["type"] == "imp":
+                self.imp_client = self
+                self.imp_loop = tornado.ioloop.PeriodicCallback(
+                    self.send_imp, 100)
+                self.imp_loop.start()
             else:
                 pass
         except Exception as e:
             logging.error(str(e))
 
     def on_close(self):
-        self.loop.stop()
+        if self == self.dec_client:
+            self.dec_loop.stop()
+        elif self == self.imp_client:
+            self.imp_loop.stop()
+        else:
+            logging.error("client identification gg")
 
     def send_dec(self):
         while(1):
             try:
                 if self.ws_client.decimated_data_msg:
                     packet = self.ws_client.decimated_data_msg.pop(0)
+                    self.write_message(packet)
+                else:
+                    return
+            except Exception as e:
+                logging.error(str(e))
+                return
+    
+    def send_imp(self):
+        while(1):
+            try:
+                if self.ws_client.impedance_data_msg:
+                    packet = self.ws_client.impedance_data_msg.pop(0)
                     self.write_message(packet)
                 else:
                     return

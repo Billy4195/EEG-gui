@@ -37,7 +37,7 @@ class Server {
         let params = {
             spsOrigin: spsOrigin,
             chNum: chNum,
-            chLabel: []       
+            chLabel: []
         };
         for (let i = 0; i < chNum; i++) {
             params.chLabel.push("mockCH" + i.toString());
@@ -53,6 +53,9 @@ class Server {
             decimation: {
                 phase: "WAIT_SET",
                 decimateNum: decimateNum
+            },
+            impedance: {
+                phase: "WAIT_SET"
             }
         };
     }
@@ -75,7 +78,8 @@ class Server {
                 console.log("Client Disconnect");
                 this.clientState.raw.phase = "WAIT_SET";
                 this.clientState.decimation.phase = "WAIT_SET";
-            });        
+                this.clientState.impedance.phase = "WAIT_SET";
+            });
             //////////////////////////////////////////////
             //this.clientState.raw.phase = "STREAM";
             //this.clientState.decimation.phase = "STREAM";
@@ -96,6 +100,14 @@ class Server {
                 setTimeout(sendRaw, this.clientState.raw.chunkSize);
             }
             setTimeout(sendRaw, this.clientState.raw.chunkSize);
+
+            const sendImpedance = () => {
+                if (this.clientState.impedance.phase === "STREAM") {
+                    ws.send(JSON.stringify(this.genPacket("IMP")));
+                }
+                setTimeout(sendImpedance, 2000);
+            }
+            setTimeout(sendImpedance, 2000);
         });
     }
     processMsg(ws, msg) {
@@ -122,6 +134,15 @@ class Server {
             } else if (COMMAND === "request") {
                 this.clientState.decimation.phase = "STREAM";
                 this.sendRes("decimation", "response", ws);
+            }
+        } else if (PT === "impedance") {
+            if (COMMAND === "setting") {
+                this.clientState.impedance.phase = "WAIT_REQ";
+                this.sendRes("impedance", "ack", ws);
+
+            } else if (COMMAND === "request") {
+                this.clientState.impedance.phase = "STREAM";
+                this.sendRes("impedance", "response", ws);
             }
         } else {
             console.log(msg);
@@ -182,6 +203,33 @@ class Server {
                     chunk_size: this.clientState.raw.chunkSize
                 }
             }));
+        } else if (PT === "impedance" && resType === "ack") {
+            ws.send(JSON.stringify({
+                type: {
+                    type: resType,
+                    source_type: "device",
+                    source_name: PT
+                },
+                name: null,
+                contents: {
+                    result: true
+                }
+            }));
+        } else if (PT === "impedance" && resType === "response") {
+            ws.send(JSON.stringify({
+                type: {
+                    type: resType,
+                    source_type: "device",
+                    source_name: PT
+                },
+                name: null,
+                contents: {
+                    enable: true,
+                    sps_origin: this.serverParams.spsOrigin,
+                    ch_num: 8,
+                    ch_label: ["Fp1", "Fp2", "Fz", "C1", "C2", "Pz", "POz", "Oz"]
+                }
+            }));
         }
     }
     genPacket(PT) {
@@ -194,7 +242,7 @@ class Server {
                 },
                 name: null,
                 contents: {
-                    sync_tick: [this.tick, this.tick+1, this.tick+2, this.tick+3],
+                    sync_tick: [this.tick, this.tick + 1, this.tick + 2, this.tick + 3],
                     eeg: Array(4).fill(Array(64).fill(1)),
                     event: {
                         event_id: [
@@ -240,6 +288,19 @@ class Server {
                     sync_tick: this.tick,
                     data: Array(this.serverParams.chNum).fill(Math.sin(this.coe)),
                     event: currentEvent
+                }
+            }
+        } else if (PT === "IMP") {
+            return {
+                type: {
+                    type: "data",
+                    source_tpye: "device",
+                    source_name: "impedance"
+                },
+                name: null,
+                contents: {
+                    sync_tick: this.tick,
+                    impedance: Array.from({length: 8}, () => Math.random() * 2000)
                 }
             }
         } else {

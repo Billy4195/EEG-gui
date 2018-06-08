@@ -9,7 +9,7 @@ import matplotlib as mpl
 from matplotlib.colorbar import ColorbarBase
 from mne.viz import topomap
 
-from ws_data import WS_Data
+from ws_imp import WS_Imp
 from channel_loca_dict import channel_dict_2D
 
 class Contact_Plot(QtGui.QWidget):
@@ -22,18 +22,19 @@ class Contact_Plot(QtGui.QWidget):
             ws_url = url
 
         self.setWindowTitle("Decimated Data Plot")
-        # self.ws_data = WS_Data(url=ws_url)
+        self.ws_imp = WS_Imp(url=ws_url)
         self.timer_interval = 0.5
 
-        self.ch_label = ['Fp1', 'Fpz', 'Fp2', \
-         'AF9', 'AF7', 'AF5', 'AF3', 'AF1', 'AFz', 'AF2', 'AF4', 'AF6', 'AF8', 'AF10', \
-         'F9', 'F7', 'F5', 'F3', 'F1', 'Fz', 'F2', 'F4', 'F6', 'F8', 'F10', \
-         'FT9', 'FT7', 'FC5', 'FC3', 'FC1', 'FCz', 'FC2', 'FC4', 'FC6', 'FT8', 'FT10', \
-         'T9', 'T7', 'C5', 'C3', 'C1', 'Cz', 'C2', 'C4', 'C6', 'T8', 'T10', \
-         'TP9', 'TP7', 'CP5', 'CP3', 'CP1', 'CPz', 'CP2', 'CP4', 'CP6', 'TP8', 'TP10', \
-         'P9', 'P7', 'P5', 'P3', 'P1', 'Pz', 'P2', 'P4', 'P6', 'P8', 'P10', \
-         'PO9', 'PO7', 'PO5', 'PO3', 'PO1', 'POz', 'PO2', 'PO4', 'PO6', 'PO8', 'PO10', \
-         'O1', 'Oz', 'O2']
+        # self.ch_label = ['Fp1', 'Fpz', 'Fp2', \
+        #  'AF9', 'AF7', 'AF5', 'AF3', 'AF1', 'AFz', 'AF2', 'AF4', 'AF6', 'AF8', 'AF10', \
+        #  'F9', 'F7', 'F5', 'F3', 'F1', 'Fz', 'F2', 'F4', 'F6', 'F8', 'F10', \
+        #  'FT9', 'FT7', 'FC5', 'FC3', 'FC1', 'FCz', 'FC2', 'FC4', 'FC6', 'FT8', 'FT10', \
+        #  'T9', 'T7', 'C5', 'C3', 'C1', 'Cz', 'C2', 'C4', 'C6', 'T8', 'T10', \
+        #  'TP9', 'TP7', 'CP5', 'CP3', 'CP1', 'CPz', 'CP2', 'CP4', 'CP6', 'TP8', 'TP10', \
+        #  'P9', 'P7', 'P5', 'P3', 'P1', 'Pz', 'P2', 'P4', 'P6', 'P8', 'P10', \
+        #  'PO9', 'PO7', 'PO5', 'PO3', 'PO1', 'POz', 'PO2', 'PO4', 'PO6', 'PO8', 'PO10', \
+        #  'O1', 'Oz', 'O2']
+        self.ch_label = ["Fp1", "Fp2", "Fz", "C1", "C2", "Pz", "POz", "Oz"]
 
         gs_kw = dict(width_ratios=[30,1], height_ratios=[1])
         self.fig, (self.ax, self.ax2) = plt.subplots(1, 2, gridspec_kw=gs_kw)
@@ -63,10 +64,12 @@ class Contact_Plot(QtGui.QWidget):
         self.value = 0
 
     def update_plot(self):
-        self.value = (self.value + 500) % 2500
-        self.ax.cla()
-        self.draw(self.ch_label, [self.value]*len(self.ch_label))
-        self.fig.canvas.draw()
+        if self.ws_imp.impedance_data:
+            self.ax.cla()
+            self.draw(self.ch_label, self.ws_imp.impedance_data.pop(0))
+            self.fig.canvas.draw()
+        else:
+            pass
 
     def draw(self, ch_label, values):
         self.plt_idx = [self.ch_names_.index(name) for name in self.ch_label]      # get the index of those required channels 
@@ -85,7 +88,7 @@ class Contact_Plot(QtGui.QWidget):
         for idx, (ch_name, value) in enumerate(zip(self.ch_label, values)):
             item = QtGui.QTableWidgetItem(ch_name)
             self.ch_table.setItem(idx, 0, item)
-            item = QtGui.QTableWidgetItem(str(value))
+            item = QtGui.QTableWidgetItem("{:.3f}".format(value))
             self.ch_table.setItem(idx, 1, item)
 
     def setup_signal_handler(self):
