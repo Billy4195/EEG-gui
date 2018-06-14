@@ -5,10 +5,9 @@ import pyqtgraph as pg
 from pyqtgraph.dockarea import *
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-import ScaleUI
 from ws_data import WS_Data
 from scale_line import Plot_Scale_Line
-from dialogs import ChannelSelector, EventTable
+from dialogs import ChannelSelector, EventTable, ScaleHandler
 
 class Raw_Data_Plot(QtGui.QWidget):
     resized = QtCore.pyqtSignal()
@@ -33,6 +32,7 @@ class Raw_Data_Plot(QtGui.QWidget):
         self.last_cursor = 0
         self.channel_selector_win = None
         self.event_table_win = None
+        self.scale_adjust_win = None
         self.init_ui()
         self.setup_signal_handler()
         self.show()
@@ -182,29 +182,8 @@ class Raw_Data_Plot(QtGui.QWidget):
             self.cursor.show()
             
     def show_scale_adjust_window(self):
-        self.scale_adjust_win = QtGui.QDialog(self)
-        self.scale_adjust_win.setWindowTitle("Adjust Scales")
-        self.scale_adjust_win.resize(500,100)
-        gridlayout = QtGui.QGridLayout(self.scale_adjust_win)
-
-        self.slider = ScaleUI.Slider(self.ws_data.get_scale_line_rela_val(),
-                                        1, 5)
-
-        button_box = QtGui.QDialogButtonBox(QtCore.Qt.Horizontal,
-                                            self.scale_adjust_win)
-        button_box.addButton("Cancel", QtGui.QDialogButtonBox.RejectRole)
-        button_box.addButton("Apply", QtGui.QDialogButtonBox.AcceptRole)
-
-        button_box.accepted.connect(self.scale_adjust_handler)
-        button_box.rejected.connect(self.scale_adjust_win.close)
-
-        gridlayout.addWidget(self.slider,0,0)
-        gridlayout.addWidget(button_box,1,0)
-        self.scale_adjust_win.show()
-    
-    def scale_adjust_handler(self):
-        self.ws_data.update_scale_line_rela_val(self.slider.get_value())
-        self.scale_adjust_win.close()
+        if self.scale_adjust_win is None:
+            self.scale_adjust_win = ScaleHandler(self)
 
     def show_channel_select_window(self):
         if self.channel_selector_win is None:

@@ -1,6 +1,7 @@
 import pyqtgraph as pg
 from pyqtgraph.dockarea import *
 from PyQt5 import QtCore, QtGui, QtWidgets
+import ScaleUI
 
 class CustomizedDialog(QtGui.QDialog):
     def __init__(self, parent):
@@ -9,7 +10,7 @@ class CustomizedDialog(QtGui.QDialog):
         self.resize(500,400)
 
     def closeEvent(self, event):
-        self.parent.channel_selector_win = None
+        raise NotImplementedError
 
 class ChannelSelector(CustomizedDialog):
     def __init__(self, parent):
@@ -69,6 +70,9 @@ class ChannelSelector(CustomizedDialog):
         for idx in range(len(self.selector)):
             self.selector.item(idx).setSelected(False)
 
+    def closeEvent(self, event):
+        self.parent.channel_selector_win = None
+
 class EventTable(CustomizedDialog):
     def __init__(self, parent):
         super().__init__(parent)
@@ -96,3 +100,38 @@ class EventTable(CustomizedDialog):
                         self.eventTable.setItem(row, 1, QtGui.QTableWidgetItem(str(value)))
                     elif key is 'duration':
                         self.eventTable.setItem(row, 2, QtGui.QTableWidgetItem(str(value)))
+
+    def closeEvent(self, event):
+        self.parent.event_table_win = None
+
+class ScaleHandler(CustomizedDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setWindowTitle("Adjust Scales")
+        self.resize(300,150)
+        self.init_ui()
+        self.show()
+
+    def init_ui(self):
+        gridlayout = QtGui.QGridLayout(self)
+
+        self.slider = ScaleUI.Slider(self.parent.ws_data.get_scale_line_rela_val(),
+                                        1, 5)
+
+        self.button_box = QtGui.QDialogButtonBox(QtCore.Qt.Horizontal,
+                                            self)
+        self.button_box.addButton("Cancel", QtGui.QDialogButtonBox.RejectRole)
+        self.button_box.addButton("Apply", QtGui.QDialogButtonBox.AcceptRole)
+
+        self.button_box.accepted.connect(self.scale_adjust_handler)
+        self.button_box.rejected.connect(self.close)
+
+        gridlayout.addWidget(self.slider,0,0)
+        gridlayout.addWidget(self.button_box,1,0)
+
+    def scale_adjust_handler(self):
+        self.parent.ws_data.update_scale_line_rela_val(self.slider.get_value())
+        self.close()
+
+    def closeEvent(self, event):
+        self.parent.scale_adjust_win = None
