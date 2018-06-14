@@ -8,6 +8,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import ScaleUI
 from ws_data import WS_Data
 from scale_line import Plot_Scale_Line
+from dialogs import ChannelSelector
 
 class Raw_Data_Plot(QtGui.QWidget):
     resized = QtCore.pyqtSignal()
@@ -30,6 +31,7 @@ class Raw_Data_Plot(QtGui.QWidget):
         self.selected_channels = list(range(1, 65))
         self.raw_data_mode = "Scan"
         self.last_cursor = 0
+        self.channel_selector_win = None
         self.init_ui()
         self.setup_signal_handler()
         self.show()
@@ -205,59 +207,8 @@ class Raw_Data_Plot(QtGui.QWidget):
         self.scale_adjust_win.close()
 
     def show_channel_select_window(self):
-        self.channel_selector_win = QtGui.QDialog(self)
-        self.channel_selector_win.setWindowTitle("Select Channels")
-        self.channel_selector_win.resize(500,400)
-        vlayout = QtGui.QVBoxLayout(self.channel_selector_win)
-
-        self.channel_selector = QtGui.QListWidget()
-        self.channel_selector.setSelectionMode(QtGui.QAbstractItemView.MultiSelection)
-        if len(self.ws_data.ch_label) is 0:
-            for i in range(1, 65):
-                item = QtGui.QListWidgetItem(self.channel_selector)
-                item.setText("Channel {}".format(i))
-                item.setData(QtCore.Qt.UserRole, i)
-                if i in self.selected_channels:
-                    item.setSelected(True)
-        else:
-            for i in range(1, 65):
-                item = QtGui.QListWidgetItem(self.channel_selector)
-                item.setText("Channel {}".format(i))
-                item.setText(self.ws_data.ch_label[i - 1])
-                item.setData(QtCore.Qt.UserRole, i)
-                if i in self.selected_channels:
-                    item.setSelected(True)
-
-        button_box = QtGui.QDialogButtonBox(QtCore.Qt.Horizontal,
-                                            self.channel_selector_win)
-        button_box.addButton("Cancel", QtGui.QDialogButtonBox.RejectRole)
-        button_box.addButton("Apply", QtGui.QDialogButtonBox.AcceptRole)
-        clear_all_btn = button_box.addButton("Clear All",
-                                QtGui.QDialogButtonBox.ResetRole)
-        select_all_btn = button_box.addButton("Select All",
-                                QtGui.QDialogButtonBox.ActionRole)
-
-        button_box.accepted.connect(self.channel_select_handler)
-        button_box.rejected.connect(self.channel_selector_win.close)
-        clear_all_btn.clicked.connect(self.select_none_channels)
-        select_all_btn.clicked.connect(self.select_all_channels)
-
-        vlayout.addWidget(self.channel_selector)
-        vlayout.addWidget(button_box)
-        self.channel_selector_win.show()
-
-    def channel_select_handler(self):
-        self.selected_channels = sorted([item.data(QtCore.Qt.UserRole) for item in self.channel_selector.selectedItems()])
-        self.update_curves_size()
-        self.channel_selector_win.close()
-
-    def select_all_channels(self):
-        for idx in range(len(self.channel_selector)):
-            self.channel_selector.item(idx).setSelected(True)
-    
-    def select_none_channels(self):
-        for idx in range(len(self.channel_selector)):
-            self.channel_selector.item(idx).setSelected(False)
+        if self.channel_selector_win is None:
+            self.channel_selector_win = ChannelSelector(self)
 
     def show_event_table_window(self):
         self.event_table_win = QtGui.QDialog(self)
