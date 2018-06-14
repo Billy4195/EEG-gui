@@ -30,8 +30,6 @@ class Raw_Data_Plot(QtGui.QWidget):
         self.selected_channels = list(range(1, 65))
         self.raw_data_mode = "Scan"
         self.last_cursor = 0
-        #tmp
-        self.saving_file = False
         self.init_ui()
         self.setup_signal_handler()
         self.show()
@@ -47,8 +45,6 @@ class Raw_Data_Plot(QtGui.QWidget):
         self.ch_select_btn = QtGui.QPushButton("Select Channels")
         self.scale_adjust_btn = QtGui.QPushButton("Adjust Scales")
         self.event_table_btn = QtGui.QPushButton("Show Events")
-        #tmp
-        self.save_file_btn = QtGui.QPushButton("Save file")
 
         self.plot = pg.PlotWidget()
         self.plot.setMouseEnabled(x= False, y= False)
@@ -64,8 +60,6 @@ class Raw_Data_Plot(QtGui.QWidget):
 
         gridlayout.addWidget(self.mode_btn, 0, 0, 1, 1)
         gridlayout.addWidget(self.dtypeCombo, 0, 1, 1, 1)
-        #tmp
-        gridlayout.addWidget(self.save_file_btn, 0, 2, 1, 1)
         gridlayout.addWidget(self.ch_select_btn, 1, 0, 1, 1)
         gridlayout.addWidget(self.scale_adjust_btn, 1, 1, 1, 1)
         gridlayout.addWidget(self.event_table_btn, 1, 2, 1, 1)
@@ -103,8 +97,6 @@ class Raw_Data_Plot(QtGui.QWidget):
         self.scale_adjust_btn.clicked.connect(self.show_scale_adjust_window)
         self.event_table_btn.clicked.connect(self.show_event_table_window)
         self.scroll.valueChanged.connect(self.update_curves_size)
-        #tmp
-        self.save_file_btn.clicked.connect(self.save_btn_handler)
 
         self.timer = QtCore.QTimer()
         self.timer.setInterval(self.timer_interval*1000)
@@ -293,16 +285,6 @@ class Raw_Data_Plot(QtGui.QWidget):
         scroll_change = -(event.angleDelta().y() // 120)
         scroll_val = self.scroll.value()
         self.scroll.setValue(scroll_val + scroll_change)
-
-    def save_btn_handler(self):
-        if not self.saving_file:
-            self.ws_data.open_raw_record_file("tmp.csv")
-            self.saving_file = True
-            self.save_file_btn.setText("Stop saving")
-        else:
-            self.ws_data.close_raw_record_file()
-            self.saving_file = False
-            self.save_file_btn.setText("Save file")
 
 if __name__ == "__main__":
     app = QtGui.QApplication([])
