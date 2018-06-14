@@ -40,12 +40,15 @@ class Contact_Plot(QtGui.QWidget):
         self.cm = plt.cm.get_cmap('RdYlGn_r')
         self.norm = mpl.colors.Normalize(vmin=0, vmax=2000)
         self.colorbar = ColorbarBase(self.ax2, cmap=self.cm, norm=self.norm, ticks=[0, 500, 1000, 1500, 2000])
-        
         while len(self.ch_label) is 0:
             pass
 
         self.plt_idx = [self.ch_names_.index(name) for name in self.ch_label]      # get the index of those required channels 
         self.ch_table = QtGui.QTableWidget(len(self.ch_label), 2, parent=self)
+        item = QtGui.QTableWidgetItem("Channel")
+        self.ch_table.setHorizontalHeaderItem (0, item)
+        item = QtGui.QTableWidgetItem("Impedance (KOhm)")
+        self.ch_table.setHorizontalHeaderItem (1, item)
         self.draw(self.ch_label, [0]*len(self.ch_label))
 
         hlayout = QtGui.QHBoxLayout(self)
