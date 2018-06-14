@@ -320,8 +320,10 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
     def on_close(self):
         if self == self.dec_client:
+            self.ws_client.send_setting_dec(False)
             self.dec_loop.stop()
         elif self == self.imp_client:
+            self.ws_client.send_setting_imp(False)
             self.imp_loop.stop()
         else:
             logging.error("client identification gg")
