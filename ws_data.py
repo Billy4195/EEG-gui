@@ -52,7 +52,7 @@ class WS_Data(object):
         self.transed_decimated_data = list()
         self.raw_sample_rate = 1000 #TODO ask from web socket
         self.plot_origin = None
-
+        self.ch_label = list()
         self.events = list()
         for i in range(self.channel_num):
             self.decimated_data.append(list())
@@ -91,11 +91,9 @@ class WS_Data(object):
         try:
             raw = json.loads(message)
             if raw["type"]["type"] == "data":
-                if raw["type"]["source_name"] == "raw":
-                    # self.add_raw_data(raw)
-                    pass
-                elif raw["type"]["source_name"] == "decimation":
-                    self.add_plot_decimated_data(raw)
+                self.add_plot_decimated_data(raw)
+            elif raw["type"]["type"] == "response":
+                self.ch_label = raw["contents"]["ch_label"]
             else:
                 pass
         except Exception as e:
@@ -173,7 +171,8 @@ class WS_Data(object):
 
         data = Raw_Data_Plot_Data(self.decimated_data_time, self.transed_decimated_data,
                                     self.events,mode=mode, channels=channels,
-                                    cursor=self.cursor,plot_origin=self.plot_origin)
+                                    cursor=self.cursor, plot_origin=self.plot_origin,
+                                    ch_label=self.ch_label)
 
         return data
 

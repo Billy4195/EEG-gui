@@ -211,12 +211,21 @@ class Raw_Data_Plot(QtGui.QWidget):
 
         self.channel_selector = QtGui.QListWidget()
         self.channel_selector.setSelectionMode(QtGui.QAbstractItemView.MultiSelection)
-        for i in range(1, 65):
-            item = QtGui.QListWidgetItem(self.channel_selector)
-            item.setText("Channel {}".format(i))
-            item.setData(QtCore.Qt.UserRole, i)
-            if i in self.selected_channels:
-                item.setSelected(True)
+        if len(self.ws_data.ch_label) is 0:
+            for i in range(1, 65):
+                item = QtGui.QListWidgetItem(self.channel_selector)
+                item.setText("Channel {}".format(i))
+                item.setData(QtCore.Qt.UserRole, i)
+                if i in self.selected_channels:
+                    item.setSelected(True)
+        else:
+            for i in range(1, 65):
+                item = QtGui.QListWidgetItem(self.channel_selector)
+                item.setText("Channel {}".format(i))
+                item.setText(self.ws_data.ch_label[i - 1])
+                item.setData(QtCore.Qt.UserRole, i)
+                if i in self.selected_channels:
+                    item.setSelected(True)
 
         button_box = QtGui.QDialogButtonBox(QtCore.Qt.Horizontal,
                                             self.channel_selector_win)

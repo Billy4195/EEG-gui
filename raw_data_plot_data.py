@@ -27,15 +27,16 @@ class Raw_Data_Plot_Data(object):
         (0.8, 16), (1.8, 17)
 
     """
-    def __init__(self, time_data, channel_data, events, mode, channels, cursor,
+    def __init__(self, time_data, channel_data, events, mode, channels, cursor, ch_label,
                     window_size=10, plot_origin=None):
         self.trans_events = copy.deepcopy(events)
         self.set_mode(mode)
+        self.ch_label = ch_label
         self.param = self.cal_mode_param(time_data, cursor, window_size, plot_origin)
         self.axises_tick = self.calculate_axises_tick(time_data, channels,
                                                     window_size, plot_origin)
         self.calculate_plot_data(time_data, channel_data, channels, plot_origin)
-
+        
     def set_mode(self, mode):
         if mode not in ["Scan", "Scroll"]:
             raise NotImplementedError("{} mode has not be implemented".format(
@@ -247,9 +248,14 @@ class Raw_Data_Plot_Data(object):
                 time_axis_ticks[idx] = (tick - origin, tick)
 
         channel_axis_ticks = list()
-        for idx, ch in enumerate(reversed(channels), start=1):
-            #TODO change 10 to window height
-            channel_axis_ticks.insert(0, (idx*10, "Channel {}".format(ch)))
+        if len(self.ch_label) is 0:
+            for idx, ch in enumerate(reversed(channels), start=1):
+                #TODO change 10 to window height
+                channel_axis_ticks.insert(0, (idx*10, "Channel {}".format(ch)))
+        else:
+            for idx, ch in enumerate(reversed(channels), start=1):
+                #TODO change 10 to window height
+                channel_axis_ticks.insert(0, (idx*10, self.ch_label[ch - 1]))
 
         return dict(bottom=time_axis_ticks,left=channel_axis_ticks)
 

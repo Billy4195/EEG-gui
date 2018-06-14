@@ -190,7 +190,8 @@ class Server {
                     enable: true,
                     sps_origin: this.serverParams.spsOrigin,
                     ch_num: this.serverParams.chNum,
-                    chunk_size: this.clientState.raw.chunkSize
+                    chunk_size: this.clientState.raw.chunkSize,
+                    ch_label: this.serverParams.chLabel
                 }
             }));
         } else if (PT === "impedance" && resType === "ack") {
