@@ -13,7 +13,6 @@ class Server {
         this.serverParams = this.initParams(1000, (Number(process.env.CH) || 64));
         //serverParams: { spsOrigin(Number), chNum(Number), chLabel(array) }
         this.clientState = this.initClientState(4, 4);
-        //clientState: { raw: { phase, chunkSize}, decimation: {phase, decimateNum} }
         this.mockLoop();
         this.wss = this.initServer();
         this.wsHandler();
@@ -47,15 +46,15 @@ class Server {
     initClientState(chunkSize, decimateNum) {
         return {
             raw: {
-                phase: "WAIT_SET",
+                stream: false,
                 chunkSize: chunkSize
             },
             decimation: {
-                phase: "WAIT_SET",
+                stream: false,
                 decimateNum: decimateNum
             },
             impedance: {
-                phase: "WAIT_SET"
+                stream: false
             }
         };
     }
@@ -70,23 +69,17 @@ class Server {
             console.log("Client Connected");
 
             ws.on("message", (msg) => {
-                console.log("!!");
-                console.log(msg);
                 this.processMsg(ws, JSON.parse(msg));
             });
             ws.on("close", () => {
                 console.log("Client Disconnect");
-                this.clientState.raw.phase = "WAIT_SET";
-                this.clientState.decimation.phase = "WAIT_SET";
-                this.clientState.impedance.phase = "WAIT_SET";
+                this.clientState.raw.stream = false;
+                this.clientState.decimation.stream = false;
+                this.clientState.impedance.stream = false;
             });
-            //////////////////////////////////////////////
-            //this.clientState.raw.phase = "STREAM";
-            //this.clientState.decimation.phase = "STREAM";
-            //This part is temporary
-            //////////////////////////////////////////////
+
             const sendDecimate = () => {
-                if (this.clientState.decimation.phase === "STREAM") {
+                if (this.clientState.decimation.stream) {
                     ws.send(JSON.stringify(this.genPacket("DEC")));
                 }
                 setTimeout(sendDecimate, this.clientState.decimation.decimateNum);
@@ -94,7 +87,7 @@ class Server {
             setTimeout(sendDecimate, this.clientState.decimation.decimateNum);
 
             const sendRaw = () => {
-                if (this.clientState.raw.phase === "STREAM") {
+                if (this.clientState.raw.stream) {
                     ws.send(JSON.stringify(this.genPacket("RAW")));
                 }
                 setTimeout(sendRaw, this.clientState.raw.chunkSize);
@@ -102,7 +95,7 @@ class Server {
             setTimeout(sendRaw, this.clientState.raw.chunkSize);
 
             const sendImpedance = () => {
-                if (this.clientState.impedance.phase === "STREAM") {
+                if (this.clientState.impedance.stream) {
                     ws.send(JSON.stringify(this.genPacket("IMP")));
                 }
                 setTimeout(sendImpedance, 2000);
@@ -117,35 +110,32 @@ class Server {
 
         if (PT === "raw") {
             if (COMMAND === "setting") {
-                this.clientState.raw.phase = "WAIT_REQ";
+                this.clientState.raw.stream = (msg["contents"]["enable"] == 'true' || msg["contents"]["enable"] == true);
                 this.clientState.raw.chunkSize = Number(msg["contents"]["chunk_size"]);
                 this.sendRes("raw", "ack", ws);
 
             } else if (COMMAND === "request") {
-                this.clientState.raw.phase = "STREAM";
                 this.sendRes("raw", "response", ws);
             }
         } else if (PT === "decimation") {
             if (COMMAND === "setting") {
-                this.clientState.decimation.phase = "WAIT_REQ";
+                this.clientState.decimation.stream = (msg["contents"]["enable"] == 'true' || msg["contents"]["enable"] == true);
                 this.clientState.decimation.decimateNum = Number(msg["contents"]["decimate_num"]);
                 this.sendRes("decimation", "ack", ws);
 
             } else if (COMMAND === "request") {
-                this.clientState.decimation.phase = "STREAM";
                 this.sendRes("decimation", "response", ws);
             }
         } else if (PT === "impedance") {
             if (COMMAND === "setting") {
-                this.clientState.impedance.phase = "WAIT_REQ";
+                this.clientState.impedance.stream = (msg["contents"]["enable"] == 'true' || msg["contents"]["enable"] == true);
                 this.sendRes("impedance", "ack", ws);
 
             } else if (COMMAND === "request") {
-                this.clientState.impedance.phase = "STREAM";
                 this.sendRes("impedance", "response", ws);
             }
-        } else {
-            console.log(msg);
+        } else if (PT === "device") {
+            this.sendRes("device", "response", ws);
         }
     }
     sendRes(PT, resType, ws) {
@@ -230,6 +220,23 @@ class Server {
                     ch_label: ["Fp1", "Fp2", "Fz", "C1", "C2", "Pz", "POz", "Oz"]
                 }
             }));
+        } else if (PT === "device" && resType === "response") {
+            ws.send(JSON.stringify({
+                type: {
+                    type: resType,
+                    source_type: "device",
+                    source_name: PT
+                },
+                name: null,
+                contents: {
+                    sampling_rate: 1000,
+                    resolution: 24,
+                    ch_num: 8,
+                    ch_label: ["Fp1", "Fp2", "Fz", "C1", "C2", "Pz", "POz", "Oz"],
+                    battery: 87,
+                    error: ""
+                }
+            }));            
         }
     }
     genPacket(PT) {

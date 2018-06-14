@@ -11,9 +11,9 @@ import logging
 import csv
 
 class WS_CLIENT(object):
-    def __init__(self, url):
+    def __init__(self, main_ui, url):
         self.url = url
-
+        self.main_ui = main_ui
         self.raw_cache_size = 1000
         self.raw_data = list()
         self.raw_data_ticks = list()
@@ -57,6 +57,9 @@ class WS_CLIENT(object):
                     self.decimated_data_msg.append(message)
                 elif raw["type"]["source_name"] == "impedance":
                     self.impedance_data_msg.append(message)
+            elif raw["type"]["type"] == "response":
+                if raw["type"]["source_name"] == "device":
+                    self.main_ui.set_device_info('mockID', raw["contents"]["sampling_rate"], raw["contents"]["resolution"], raw["contents"]["battery"])
             else:
                 pass
         except Exception as e:
@@ -75,6 +78,15 @@ class WS_CLIENT(object):
         pass
 
     def send_init_commands(self):
+        device_request_msg = json.dumps({
+            "type": {
+                "type": "request",
+                "target_tpye": "device",
+                "target_name": "device"
+            },
+            "name": None,
+            "contents": "device info"           
+        })
         raw_setting_msg = json.dumps({
             "type": {
                 "type": "setting",
@@ -159,6 +171,7 @@ class WS_CLIENT(object):
                 "ch_label"
             ]                
         })
+        self.ws.send(device_request_msg)
         self.ws.send(raw_setting_msg)
         self.ws.send(raw_request_msg)
         self.ws.send(dec_setting_msg)

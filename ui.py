@@ -23,9 +23,7 @@ from timer import TimeThread
 class EEG_Application(QtGui.QApplication):
     def __init__(self):
         super().__init__([])
-        ws_url = "ws://localhost:8888"
-        self.ws_client = WS_CLIENT(url=ws_url)
-        self.ws_server = WS_SERVER(ws_client=self.ws_client, port=7777)
+        self.ws_url = "ws://localhost:8888"
 
         self.main_win = QtGui.QMainWindow()
         self.main_win.show()
@@ -35,6 +33,10 @@ class EEG_Application(QtGui.QApplication):
         self.setupUi()
         self.setupSignals()
         self.state = "IDLE"
+
+    def init_ws(self):
+        self.ws_client = WS_CLIENT(main_ui=self, url=self.ws_url)
+        self.ws_server = WS_SERVER(ws_client=self.ws_client, port=7777)    
 
     def setupUi(self):
         """Create Basic UI layout"""
@@ -70,10 +72,10 @@ class EEG_Application(QtGui.QApplication):
 
         self.connect_btn = QtGui.QPushButton("Connect")
 
-        self.device_id.setText("EEGRAW-001AFF090B9E")
-        self.sampling_rate.setText("1000 sps")
-        self.Battery_state.setText("87%")
-        self.resolution.setText("24 bit")
+        self.device_id.setText("")
+        self.sampling_rate.setText("")
+        self.Battery_state.setText("")
+        self.resolution.setText("")
 
         gridlayout = QtGui.QGridLayout()
         gridlayout.addWidget(_device_id, 0, 0, 1, 1)
@@ -90,6 +92,12 @@ class EEG_Application(QtGui.QApplication):
         groupBox.setLayout(gridlayout)
         return groupBox
 
+    def set_device_info(self, id, sample_rate, resolution, bettery):
+        self.device_id.setText(id)
+        self.sampling_rate.setText(str(sample_rate) + " sps")
+        self.Battery_state.setText(str(bettery) + "%")
+        self.resolution.setText(str(resolution) + " bit")        
+    
     def plot_group(self):
         groupBox = QtGui.QGroupBox("Plot")
 
@@ -153,6 +161,7 @@ class EEG_Application(QtGui.QApplication):
         return groupBox
 
     def setupSignals(self):
+        self.connect_btn.clicked.connect(self.init_ws)
         self.signal_btn.clicked.connect(self.decimated_handler)
         self.contact_btn.clicked.connect(self.contact_handler)
         self.record_btn.clicked.connect(self.start_recording)
