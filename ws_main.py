@@ -1,3 +1,5 @@
+import os, os.path
+import errno
 import time
 import threading
 import json
@@ -210,8 +212,19 @@ class WS_CLIENT(object):
             if len(self.raw_data) > self.raw_cache_size:
                 self.write_raw_data_to_file()
 
+    def mkdir_p(self, path):
+        try:
+            os.makedirs(path)
+        except OSError as exc: # Python >2.5
+            if exc.errno == errno.EEXIST and os.path.isdir(path):
+                pass
+            else: raise
+    def safe_open_w(self, path):
+        self.mkdir_p(os.path.dirname(path))
+        return open(path, 'w')
+
     def open_raw_record_file(self, filename):
-        self.file_pointer = open(filename, "w")
+        self.file_pointer = self.safe_open_w(filename)
         self.csv_writer = csv.writer(self.file_pointer)
 
         self.raw_data.clear()
