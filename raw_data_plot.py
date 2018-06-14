@@ -142,8 +142,10 @@ class Raw_Data_Plot(QtGui.QWidget):
 
         axis = self.plot.getAxis("bottom")
         axis.setTicks([plot_data.axises_tick["bottom"]])
+        axis.setLabel("Time (sec)")
         axis = self.plot.getAxis("left")
         axis.setTicks([plot_data.axises_tick["left"]])
+        axis.setLabel("Voltage (uV)")
 
         self.scale_lines.update(self.selected_channels,
                                 plot_data.axises_tick["bottom"])
