@@ -37,11 +37,6 @@ class Raw_Data_Plot(QtGui.QWidget):
     def init_ui(self):
         gridlayout = QtGui.QGridLayout(self)
         self.mode_btn = QtGui.QPushButton("Change to Scroll Mode")
-        self.dtypeCombo = QtWidgets.QComboBox()
-        self.dtypeCombo.setObjectName("dtypeCombo")
-        self.dtypeCombo.addItem("125")
-        self.dtypeCombo.addItem("500")
-        self.dtypeCombo.addItem("1000")
         self.ch_select_btn = QtGui.QPushButton("Select Channels")
         self.scale_adjust_btn = QtGui.QPushButton("Adjust Scales")
         self.event_table_btn = QtGui.QPushButton("Show Events")
@@ -59,11 +54,10 @@ class Raw_Data_Plot(QtGui.QWidget):
         plot_layout.addWidget(self.scroll)
 
         gridlayout.addWidget(self.mode_btn, 0, 0, 1, 1)
-        gridlayout.addWidget(self.dtypeCombo, 0, 1, 1, 1)
-        gridlayout.addWidget(self.ch_select_btn, 1, 0, 1, 1)
-        gridlayout.addWidget(self.scale_adjust_btn, 1, 1, 1, 1)
-        gridlayout.addWidget(self.event_table_btn, 1, 2, 1, 1)
-        gridlayout.addWidget(raw_plot_widget, 2, 0, 4, 4)
+        gridlayout.addWidget(self.ch_select_btn, 0, 1, 1, 1)
+        gridlayout.addWidget(self.scale_adjust_btn, 0, 2, 1, 1)
+        gridlayout.addWidget(self.event_table_btn, 0, 3, 1, 1)
+        gridlayout.addWidget(raw_plot_widget, 1, 0, 4, 4)
 
         self.cursor = pg.InfiniteLine(pos=0)
         self.plot.addItem(self.cursor)
