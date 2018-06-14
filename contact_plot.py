@@ -51,6 +51,9 @@ class Contact_Plot(QtGui.QWidget):
         item = QtGui.QTableWidgetItem("Impedance (KOhm)")
         self.ch_table.setHorizontalHeaderItem (1, item)
         self.draw(self.ch_label, [0]*len(self.ch_label))
+        header = self.ch_table.horizontalHeader()
+        header.setResizeMode(QtGui.QHeaderView.ResizeToContents)
+        header.setStretchLastSection(True)
 
         hlayout = QtGui.QHBoxLayout(self)
         hlayout.addWidget(self.canvas)
