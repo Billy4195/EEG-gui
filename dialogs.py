@@ -114,9 +114,8 @@ class ScaleHandler(CustomizedDialog):
 
     def init_ui(self):
         gridlayout = QtGui.QGridLayout(self)
-
-        self.slider = ScaleUI.Slider(self.parent.ws_data.get_scale_line_rela_val(),
-                                        1, 5)
+        current_scale = (self.parent.ws_data.get_scale_line_rela_val(), 10)
+        self.selector = ScaleUI.ScaleSelector(current_scale)
 
         self.button_box = QtGui.QDialogButtonBox(QtCore.Qt.Horizontal,
                                             self)
@@ -126,11 +125,12 @@ class ScaleHandler(CustomizedDialog):
         self.button_box.accepted.connect(self.scale_adjust_handler)
         self.button_box.rejected.connect(self.close)
 
-        gridlayout.addWidget(self.slider,0,0)
+        gridlayout.addWidget(self.selector,0,0)
         gridlayout.addWidget(self.button_box,1,0)
 
     def scale_adjust_handler(self):
-        self.parent.ws_data.update_scale_line_rela_val(self.slider.get_value())
+        amp_scale, time_scale = self.selector.get_value()
+        self.parent.ws_data.update_scale_line_rela_val(amp_scale)
         self.close()
 
     def closeEvent(self, event):
