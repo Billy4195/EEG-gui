@@ -171,6 +171,7 @@ class EEG_Application(QtGui.QApplication):
         return groupBox
 
     def setupSignals(self):
+        self.lastWindowClosed.connect(self.clean_up)
         self.connect_btn.clicked.connect(self.init_ws)
         self.signal_btn.clicked.connect(self.decimated_handler)
         self.contact_btn.clicked.connect(self.contact_handler)
@@ -264,3 +265,9 @@ class EEG_Application(QtGui.QApplication):
     def update_elapsed_time(self, timestamp):
         if self.state == "RECORDING":
             self.record_btn.setText("Elapsed Time "+ "{:.2f}".format(float(timestamp)))
+
+    def clean_up(self):
+        if self.decimated_plot_proc and self.decimated_plot_proc.poll() is None:
+            self.decimated_plot_proc.kill()
+        if self.contact_plot_proc and self.contact_plot_proc.poll() is None:
+            self.contact_plot_proc.kill()
