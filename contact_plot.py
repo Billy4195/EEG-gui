@@ -21,20 +21,10 @@ class Contact_Plot(QtGui.QWidget):
         else:
             ws_url = url
 
-        self.setWindowTitle("Decimated Data Plot")
-        self.ws_imp = WS_Imp(url=ws_url)
+        self.setWindowTitle("Contact Impadance Plot")
+        self.ws_imp = WS_Imp(contact_plot=self, url=ws_url)
         self.timer_interval = 0.5
-
-        # self.ch_label = ['Fp1', 'Fpz', 'Fp2', \
-        #  'AF9', 'AF7', 'AF5', 'AF3', 'AF1', 'AFz', 'AF2', 'AF4', 'AF6', 'AF8', 'AF10', \
-        #  'F9', 'F7', 'F5', 'F3', 'F1', 'Fz', 'F2', 'F4', 'F6', 'F8', 'F10', \
-        #  'FT9', 'FT7', 'FC5', 'FC3', 'FC1', 'FCz', 'FC2', 'FC4', 'FC6', 'FT8', 'FT10', \
-        #  'T9', 'T7', 'C5', 'C3', 'C1', 'Cz', 'C2', 'C4', 'C6', 'T8', 'T10', \
-        #  'TP9', 'TP7', 'CP5', 'CP3', 'CP1', 'CPz', 'CP2', 'CP4', 'CP6', 'TP8', 'TP10', \
-        #  'P9', 'P7', 'P5', 'P3', 'P1', 'Pz', 'P2', 'P4', 'P6', 'P8', 'P10', \
-        #  'PO9', 'PO7', 'PO5', 'PO3', 'PO1', 'POz', 'PO2', 'PO4', 'PO6', 'PO8', 'PO10', \
-        #  'O1', 'Oz', 'O2']
-        self.ch_label = ["Fp1", "Fp2", "Fz", "C1", "C2", "Pz", "POz", "Oz"]
+        self.ch_label = list()   
 
         gs_kw = dict(width_ratios=[30,1], height_ratios=[1])
         self.fig, (self.ax, self.ax2) = plt.subplots(1, 2, gridspec_kw=gs_kw)
@@ -43,15 +33,18 @@ class Contact_Plot(QtGui.QWidget):
 
         self.pos = list(channel_dict_2D.values())                        # get all X,Y values
         self.ch_names_ = list(channel_dict_2D.keys())                    # get all channel's names
-
-        self.plt_idx = [self.ch_names_.index(name) for name in self.ch_label]      # get the index of those required channels 
+        
 
         self.pos, self.outlines = topomap._check_outlines(self.pos, 'head')        # from mne.viz libs, normalize the pos
 
         self.cm = plt.cm.get_cmap('RdYlGn_r')
         self.norm = mpl.colors.Normalize(vmin=0, vmax=2000)
         self.colorbar = ColorbarBase(self.ax2, cmap=self.cm, norm=self.norm, ticks=[0, 500, 1000, 1500, 2000])
+        
+        while len(self.ch_label) is 0:
+            pass
 
+        self.plt_idx = [self.ch_names_.index(name) for name in self.ch_label]      # get the index of those required channels 
         self.ch_table = QtGui.QTableWidget(len(self.ch_label), 2, parent=self)
         self.draw(self.ch_label, [0]*len(self.ch_label))
 

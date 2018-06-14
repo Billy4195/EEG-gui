@@ -15,7 +15,8 @@ from raw_data_plot_data import Raw_Data_Plot_Data
          
 
 class WS_Imp(object):
-    def __init__(self, url):
+    def __init__(self, contact_plot, url):
+        self.contact_plot = contact_plot
         self.url = url
         self.impedance_data = list()
         self.channel_num = 8
@@ -49,6 +50,8 @@ class WS_Imp(object):
             if raw["type"]["type"] == "data":
                 if raw["type"]["source_name"] == "impedance":
                     self.add_impedance_data(raw)
+            elif raw["type"]["type"] == "response":
+                self.contact_plot.ch_label = raw["contents"]["ch_label"]                
             else:
                 pass
         except Exception as e:
