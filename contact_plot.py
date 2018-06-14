@@ -84,6 +84,8 @@ class Contact_Plot(QtGui.QWidget):
             item = QtGui.QTableWidgetItem("{:.3f}".format(value))
             self.ch_table.setItem(idx, 1, item)
 
+        self.ax.axis("off")
+
     def setup_signal_handler(self):
         self.timer = QtCore.QTimer()
         self.timer.setInterval(self.timer_interval*1000)
