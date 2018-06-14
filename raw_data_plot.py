@@ -42,6 +42,7 @@ class Raw_Data_Plot(QtGui.QWidget):
         self.event_table_btn = QtGui.QPushButton("Show Events")
 
         self.plot = pg.PlotWidget()
+        self.plot.setMenuEnabled(enableMenu=False)
         self.plot.setMouseEnabled(x= False, y= False)
         self.plot.setLimits(xMin=0, maxXRange=10)
         self.plot.enableAutoRange(x=True, y=False)
