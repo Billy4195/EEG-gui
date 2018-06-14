@@ -35,7 +35,7 @@ class WS_CLIENT(object):
         while not self.ws.sock.connected:
             time.sleep(1)
 
-        self.send_init_commands()
+        self.send_info_req()
 
     def on_connect(self):
         while True:
@@ -50,16 +50,14 @@ class WS_CLIENT(object):
         """
         try:
             raw = json.loads(message)
-            if raw["type"]["type"] == "data":
-                if raw["type"]["source_name"] == "raw":
-                    self.add_raw_data(raw)
-                elif raw["type"]["source_name"] == "decimation":
-                    self.decimated_data_msg.append(message)
-                elif raw["type"]["source_name"] == "impedance":
-                    self.impedance_data_msg.append(message)
-            elif raw["type"]["type"] == "response":
-                if raw["type"]["source_name"] == "device":
-                    self.main_ui.set_device_info('mockID', raw["contents"]["sampling_rate"], raw["contents"]["resolution"], raw["contents"]["battery"])
+            if raw["type"]["source_name"] == "device":
+                self.main_ui.set_device_info('mockID', raw["contents"]["sampling_rate"], raw["contents"]["resolution"], raw["contents"]["battery"])
+            elif raw["type"]["source_name"] == "raw" and raw["type"]["type"] == "data":
+                self.add_raw_data(raw)
+            elif raw["type"]["source_name"] == "decimation":
+                self.decimated_data_msg.append(message)
+            elif raw["type"]["source_name"] == "impedance":
+                self.impedance_data_msg.append(message)
             else:
                 pass
         except Exception as e:
@@ -77,7 +75,7 @@ class WS_CLIENT(object):
         """
         pass
 
-    def send_init_commands(self):
+    def send_info_req(self):
         device_request_msg = json.dumps({
             "type": {
                 "type": "request",
@@ -87,6 +85,9 @@ class WS_CLIENT(object):
             "name": None,
             "contents": "device info"           
         })
+        self.ws.send(device_request_msg)
+
+    def send_setting_raw(self, operation):
         raw_setting_msg = json.dumps({
             "type": {
                 "type": "setting",
@@ -95,10 +96,42 @@ class WS_CLIENT(object):
             },
             "name": None,
             "contents": {
-                "enable": True,
+                "enable": operation,
                 "chunk_size": 4
             }
         })
+        self.ws.send(raw_setting_msg)
+
+    def send_setting_dec(self, operation):
+        dec_setting_msg = json.dumps({
+            "type": {
+                "type": "setting",
+                "target_tpye": "algorithm",
+                "target_name": "decimation"
+            },
+            "name": None,
+            "contents": {
+                "enable": operation,
+                "decimate_num": 4
+            }
+        })
+        self.ws.send(dec_setting_msg)
+
+    def send_setting_imp(self, operation):
+        imp_setting_msg = json.dumps({
+            "type": {
+                "type": "setting",
+                "target_tpye": "device",
+                "target_name": "impedance"
+            },
+            "name": None,
+            "contents": {
+                "enable": operation
+            }            
+        })     
+        self.ws.send(imp_setting_msg)
+
+    def send_request_raw(self): 
         raw_request_msg = json.dumps({
             "type": {
                 "type": "request",
@@ -115,19 +148,10 @@ class WS_CLIENT(object):
                     "ch_label"
                 ]
             }
-        })
-        dec_setting_msg = json.dumps({
-            "type": {
-                "type": "setting",
-                "target_tpye": "algorithm",
-                "target_name": "decimation"
-            },
-            "name": None,
-            "contents": {
-                "enable": True,
-                "decimate_num": 4
-            }
-        })
+        })      
+        self.ws.send(raw_request_msg)
+    
+    def send_request_dec(self):
         dec_request_msg = json.dumps({
             "type": {
                 "type": "request",
@@ -146,17 +170,9 @@ class WS_CLIENT(object):
                 ]
             }
         })
-        imp_setting_msg = json.dumps({
-            "type": {
-                "type": "setting",
-                "target_tpye": "device",
-                "target_name": "impedance"
-            },
-            "name": None,
-            "contents": {
-                "enable": True
-            }            
-        })
+        self.ws.send(dec_request_msg)
+
+    def send_request_imp(self):
         imp_request_msg = json.dumps({
             "type": {
                 "type": "request",
@@ -171,13 +187,7 @@ class WS_CLIENT(object):
                 "ch_label"
             ]                
         })
-        self.ws.send(device_request_msg)
-        self.ws.send(raw_setting_msg)
-        self.ws.send(raw_request_msg)
-        self.ws.send(dec_setting_msg)
-        self.ws.send(dec_request_msg)
-        self.ws.send(imp_setting_msg)
-        self.ws.send(imp_request_msg)
+        self.ws.send(imp_request_msg)   
 
     def add_raw_data(self, data):
         if self.recording_data:
@@ -281,11 +291,10 @@ class WS_SERVER(object):
 
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
-    dec_client = None
-    imp_client = None
-
     def initialize(self, ws_client):
         self.ws_client = ws_client
+        self.dec_client = None
+        self.imp_client = None
 
     def check_origin(self, origin):
         return True

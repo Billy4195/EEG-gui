@@ -174,6 +174,9 @@ class EEG_Application(QtGui.QApplication):
                 return
         try:
             self.decimated_plot_proc = Popen(['python', 'raw_data_plot.py'])
+            self.ws_client.decimated_data_msg.clear()
+            self.ws_client.send_request_dec()
+            self.ws_client.send_setting_dec(True)
         except Exception as e:
             self.decimated_plot_proc.kill()
             logging.error(str(e))
@@ -185,12 +188,21 @@ class EEG_Application(QtGui.QApplication):
 
         try:
             self.contact_plot_proc = Popen(['python', 'contact_plot.py'])
+            self.ws_client.impedance_data_msg.clear()
+            self.ws_client.send_request_imp()
+            self.ws_client.send_setting_imp(True)
         except Exception as e:
             self.contact_plot_proc.kill()
             logging.error(str(e))
 
     def start_recording(self):
         if self.state == "IDLE":
+            self.ws_client.raw_data.clear()
+            self.ws_client.raw_data_ticks.clear()
+            self.ws_client.raw_data_events.clear()
+            self.ws_client.send_request_raw()
+            self.ws_client.send_setting_raw(True)
+
             if self.file_path_input.text() == "":
                 default_path = os.path.join(os.path.expanduser("~"),"ArtiseBio")
                 while os.path.isdir(default_path):
@@ -217,6 +229,7 @@ class EEG_Application(QtGui.QApplication):
 
     def stop_recording(self):
         if self.state == "RECORDING":
+            self.ws_client.send_setting_raw(False)
             self.time_t.stop()
             self.state = "IDLE"
             self.record_btn.setText("Start Recording")
