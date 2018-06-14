@@ -21,7 +21,7 @@ class Contact_Plot(QtGui.QWidget):
         else:
             ws_url = url
 
-        self.setWindowTitle("Contact Impadance Plot")
+        self.setWindowTitle("Contact Impedance")
         self.ws_imp = WS_Imp(contact_plot=self, url=ws_url)
         self.timer_interval = 0.5
         self.ch_label = list()   
