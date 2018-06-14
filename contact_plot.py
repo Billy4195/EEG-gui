@@ -40,6 +40,7 @@ class Contact_Plot(QtGui.QWidget):
         self.cm = plt.cm.get_cmap('RdYlGn_r')
         self.norm = mpl.colors.Normalize(vmin=0, vmax=2000)
         self.colorbar = ColorbarBase(self.ax2, cmap=self.cm, norm=self.norm, ticks=[0, 500, 1000, 1500, 2000])
+        self.colorbar.set_ticklabels(['0 KOhm','500', '1000', '1500', '2000'])
         while len(self.ch_label) is 0:
             pass
 
