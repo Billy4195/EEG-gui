@@ -32,12 +32,15 @@ class EEG_Application(QtGui.QApplication):
         self.contact_plot_proc = None
         self.setupUi()
         self.setupSignals()
+        self.set_all_button_state(False) 
         self.state = "IDLE"
 
     def init_ws(self):
+        self.connect_btn.setEnabled(False)
         self.ws_client = WS_CLIENT(main_ui=self, url=self.ws_url)
-        self.ws_server = WS_SERVER(ws_client=self.ws_client, port=7777)    
-
+        self.ws_server = WS_SERVER(main_ui=self, ws_client=self.ws_client, port=7777)
+        self.set_all_button_state(True) 
+        
     def setupUi(self):
         """Create Basic UI layout"""
         self.main_win.setObjectName("MainWindow")
@@ -103,17 +106,24 @@ class EEG_Application(QtGui.QApplication):
 
         self.contact_btn = QtGui.QPushButton("Contact")
         self.signal_btn = QtGui.QPushButton("Signal")
-        self.Spectrum_btn = QtGui.QPushButton("Spectrum")
+        self.spectrum_btn = QtGui.QPushButton("Spectrum")
         self.TF_btn = QtGui.QPushButton("Time-Freq.")
 
         gridlayout = QtGui.QGridLayout()
         gridlayout.addWidget(self.contact_btn, 0, 0, 1, 1)
         gridlayout.addWidget(self.signal_btn, 0, 1, 1, 1)
-        gridlayout.addWidget(self.Spectrum_btn, 0, 2, 1, 1)
+        gridlayout.addWidget(self.spectrum_btn, 0, 2, 1, 1)
         gridlayout.addWidget(self.TF_btn, 0, 3, 1, 1)
 
         groupBox.setLayout(gridlayout)
         return groupBox
+   
+    def set_all_button_state(self, operation):
+        self.signal_btn.setEnabled(operation)
+        self.contact_btn.setEnabled(operation)
+        self.spectrum_btn.setEnabled(operation)
+        self.TF_btn.setEnabled(operation)
+        self.record_btn.setEnabled(operation)
 
     def record_group(self):
         groupBox = QtGui.QGroupBox("Data Record")
@@ -173,6 +183,8 @@ class EEG_Application(QtGui.QApplication):
            if self.decimated_plot_proc.poll() is None:
                 return
         try:
+            self.signal_btn.setEnabled(False)
+            self.contact_btn.setEnabled(False)
             self.decimated_plot_proc = Popen(['python', 'raw_data_plot.py'])
             self.ws_client.decimated_data_msg.clear()
             self.ws_client.send_request_dec()
@@ -185,8 +197,8 @@ class EEG_Application(QtGui.QApplication):
         if self.contact_plot_proc:
             if self.contact_plot_proc.poll() is None:
                 return
-
         try:
+            self.set_all_button_state(False)
             self.contact_plot_proc = Popen(['python', 'contact_plot.py'])
             self.ws_client.impedance_data_msg.clear()
             self.ws_client.send_request_imp()
@@ -197,6 +209,8 @@ class EEG_Application(QtGui.QApplication):
 
     def start_recording(self):
         if self.state == "IDLE":
+            self.record_btn.setEnabled(False)
+            self.contact_btn.setEnabled(False)
             self.ws_client.raw_data.clear()
             self.ws_client.raw_data_ticks.clear()
             self.ws_client.raw_data_events.clear()
@@ -229,6 +243,9 @@ class EEG_Application(QtGui.QApplication):
 
     def stop_recording(self):
         if self.state == "RECORDING":
+            self.record_btn.setEnabled(True)
+            if self.signal_btn.isEnabled(): #check if other plot or record not running
+                self.contact_btn.setEnabled(True)
             self.ws_client.send_setting_raw(False)
             self.time_t.stop()
             self.state = "IDLE"

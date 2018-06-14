@@ -275,10 +275,13 @@ class WS_CLIENT(object):
         self.csv_writer = None
 
 class WS_SERVER(object):
-    def __init__(self, ws_client, port):
+    def __init__(self, main_ui, ws_client, port):
         self.port = port
         self.ws_app = tornado.web.Application([
-            (r"/", WebSocketHandler, {'ws_client': ws_client})
+            (r"/", WebSocketHandler, {
+                'ws_client': ws_client,
+                'main_ui': main_ui
+            })
         ])
         self.server_thread = threading.Thread(target=self.start_server)
         self.server_thread.daemon = True
@@ -291,7 +294,8 @@ class WS_SERVER(object):
 
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
-    def initialize(self, ws_client):
+    def initialize(self, ws_client, main_ui):
+        self.main_ui = main_ui
         self.ws_client = ws_client
         self.dec_client = None
         self.imp_client = None
@@ -322,9 +326,13 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         if self == self.dec_client:
             self.ws_client.send_setting_dec(False)
             self.dec_loop.stop()
+            self.main_ui.signal_btn.setEnabled(True)
+            if self.main_ui.record_btn.isEnabled(): #check if other plot or record not running
+                self.main_ui.contact_btn.setEnabled(True)
         elif self == self.imp_client:
             self.ws_client.send_setting_imp(False)
             self.imp_loop.stop()
+            self.main_ui.set_all_button_state(True)
         else:
             logging.error("client identification gg")
 
