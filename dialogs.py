@@ -2,12 +2,19 @@ import pyqtgraph as pg
 from pyqtgraph.dockarea import *
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-class ChannelSelector(QtGui.QDialog):
+class CustomizedDialog(QtGui.QDialog):
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
-        self.setWindowTitle("Select Channels")
         self.resize(500,400)
+
+    def closeEvent(self, event):
+        self.parent.channel_selector_win = None
+
+class ChannelSelector(CustomizedDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setWindowTitle("Select Channels")
         self.init_ui()
         self.show()
 
@@ -62,5 +69,30 @@ class ChannelSelector(QtGui.QDialog):
         for idx in range(len(self.selector)):
             self.selector.item(idx).setSelected(False)
 
-    def closeEvent(self, event):
-        self.parent.channel_selector_win = None
+class EventTable(CustomizedDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setWindowTitle("Event List")
+        self.init_ui()
+        self.update_event_table()
+        self.show()
+
+    def init_ui(self):
+        self.eventTable = QtGui.QTableWidget()
+        self.eventTable.setColumnCount(3)
+        self.eventTable.setHorizontalHeaderLabels(['Time', 'Name', 'Duration'])
+        gridlayout = QtGui.QGridLayout(self)
+        gridlayout.addWidget(self.eventTable)
+
+    def update_event_table(self):
+        self.eventTable.clearContents()
+        if len(self.parent.ws_data.events) > 0:
+            self.eventTable.setRowCount(len(self.parent.ws_data.events))
+            for row, event in enumerate(self.parent.ws_data.events):
+                for key, value in event.items():
+                    if key is 'time':
+                        self.eventTable.setItem(row, 0, QtGui.QTableWidgetItem(str(value)))
+                    elif key is 'name':
+                        self.eventTable.setItem(row, 1, QtGui.QTableWidgetItem(str(value)))
+                    elif key is 'duration':
+                        self.eventTable.setItem(row, 2, QtGui.QTableWidgetItem(str(value)))

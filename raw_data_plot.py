@@ -8,7 +8,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import ScaleUI
 from ws_data import WS_Data
 from scale_line import Plot_Scale_Line
-from dialogs import ChannelSelector
+from dialogs import ChannelSelector, EventTable
 
 class Raw_Data_Plot(QtGui.QWidget):
     resized = QtCore.pyqtSignal()
@@ -32,6 +32,7 @@ class Raw_Data_Plot(QtGui.QWidget):
         self.raw_data_mode = "Scan"
         self.last_cursor = 0
         self.channel_selector_win = None
+        self.event_table_win = None
         self.init_ui()
         self.setup_signal_handler()
         self.show()
@@ -82,10 +83,6 @@ class Raw_Data_Plot(QtGui.QWidget):
             self.event_lines.append(event_line)
             self.plot.addItem(event_line)
             event_line.hide()
-        
-        self.eventTable = QtGui.QTableWidget()
-        self.eventTable.setColumnCount(3)
-        self.eventTable.setHorizontalHeaderLabels(['Time', 'Name', 'Duration'])
 
     def setup_signal_handler(self):
         self.resized.connect(self.update_curves_size)
@@ -167,7 +164,8 @@ class Raw_Data_Plot(QtGui.QWidget):
         self.cursor.setValue(plot_data.cursor)
         self.ws_data.clean_oudated_data(cursor_time)
 
-        self.update_event_table()
+        if self.event_table_win:
+            self.event_table_win.update_event_table()
         self.last_cursor = cursor_time
 
     def raw_data_mode_handler(self):
@@ -211,26 +209,8 @@ class Raw_Data_Plot(QtGui.QWidget):
             self.channel_selector_win = ChannelSelector(self)
 
     def show_event_table_window(self):
-        self.event_table_win = QtGui.QDialog(self)
-        self.event_table_win.setWindowTitle("Event List")
-        self.event_table_win.resize(500,400)
-        gridlayout = QtGui.QGridLayout(self.event_table_win)
-        gridlayout.addWidget(self.eventTable)
-        self.update_event_table()
-        self.event_table_win.show()
-
-    def update_event_table(self):
-        self.eventTable.clearContents()
-        if len(self.ws_data.events) > 0:
-            self.eventTable.setRowCount(len(self.ws_data.events))
-            for row, event in enumerate(self.ws_data.events):
-                for key, value in event.items():
-                    if key is 'time':
-                        self.eventTable.setItem(row, 0, QtGui.QTableWidgetItem(str(value)))
-                    elif key is 'name':
-                        self.eventTable.setItem(row, 1, QtGui.QTableWidgetItem(str(value)))
-                    elif key is 'duration':
-                        self.eventTable.setItem(row, 2, QtGui.QTableWidgetItem(str(value)))
+        if self.event_table_win is None:
+            self.event_table_win = EventTable(self)
 
     def resizeEvent(self, event):
         self.resized.emit()
