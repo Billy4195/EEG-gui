@@ -35,7 +35,7 @@ class Raw_Data_Plot_Data(object):
         self.param = self.cal_mode_param(time_data, cursor, window_size, plot_origin)
         self.axises_tick = self.calculate_axises_tick(time_data, channels,
                                                     window_size, plot_origin)
-        self.calculate_plot_data(time_data, channel_data, channels, plot_origin)
+        self.calculate_plot_data(time_data, channel_data, channels, plot_origin, window_size)
         
     def set_mode(self, mode):
         if mode not in ["Scan", "Scroll"]:
@@ -92,7 +92,7 @@ class Raw_Data_Plot_Data(object):
         origin -= window_size
 
         last_origin = cursor - window_size
-        if last_origin < plot_origin:
+        if last_origin < int(plot_origin):
             last_origin = None
 
         origin_idx = None
@@ -232,9 +232,9 @@ class Raw_Data_Plot_Data(object):
                     if tick >= origin:
                         time_axis_ticks[idx] = (tick - origin, tick)
                     else:
-                        time_axis_ticks[idx] = (tick + 10 - origin, tick)
+                        time_axis_ticks[idx] = (tick + window_size - origin, tick)
             else:
-                time_axis_ticks = list( range(int(origin), int(origin)+11))
+                time_axis_ticks = list( range(int(origin), int(origin) + window_size + 1))
 
                 for idx, tick in enumerate(time_axis_ticks):
                     time_axis_ticks[idx] = (tick - origin, tick)
@@ -259,7 +259,7 @@ class Raw_Data_Plot_Data(object):
 
         return dict(bottom=time_axis_ticks,left=channel_axis_ticks)
 
-    def calculate_plot_data(self, time_data, channel_data, channels, plot_origin):
+    def calculate_plot_data(self, time_data, channel_data, channels, plot_origin, window_size=10):
         """
         ## Scan mode
         if
@@ -331,16 +331,16 @@ class Raw_Data_Plot_Data(object):
 
             shifted_channel_data = list()
             if last_origin_idx is not None:
-                target_time_data = time_data[origin_idx:cursor_idx] \
+                target_time_data = time_data[origin_idx:cursor_idx+1] \
                                     + time_data[last_origin_idx:origin_idx]
                 for idx, time_stamp in enumerate(target_time_data):
                     if time_stamp >= origin:
                         target_time_data[idx] = time_stamp - origin
                     else:
-                        target_time_data[idx] = time_stamp + 10 - origin
+                        target_time_data[idx] = time_stamp + window_size - origin
 
                 for shifted, ch in enumerate(reversed(channels), start=1):
-                    channel_d = channel_data[ch-1][origin_idx:cursor_idx] \
+                    channel_d = channel_data[ch-1][origin_idx:cursor_idx+1] \
                                 + channel_data[ch-1][last_origin_idx:origin_idx]
                     shifted_channel_data.insert(0,[x+ shifted*10 \
                                                 for x in channel_d])
@@ -350,11 +350,11 @@ class Raw_Data_Plot_Data(object):
                                         event['time'] <= self.param['cursor'])]
 
             else:
-                target_time_data = time_data[origin_idx:cursor_idx]
+                target_time_data = time_data[origin_idx:cursor_idx+1]
                 target_time_data = [t - origin for t in target_time_data]
 
                 for shifted, ch in enumerate(reversed(channels), start=1):
-                    channel_d = channel_data[ch-1][origin_idx:cursor_idx]
+                    channel_d = channel_data[ch-1][origin_idx:cursor_idx+1]
                     shifted_channel_data.insert(0,[x+ shifted*10 \
                                                 for x in channel_d])
 
@@ -370,7 +370,7 @@ class Raw_Data_Plot_Data(object):
                 if tmp_time >= origin:
                     self.trans_events[idx]['time'] -= origin
                 elif tmp_time < origin:
-                    self.trans_events[idx]['time'] += 10
+                    self.trans_events[idx]['time'] += window_size
                     self.trans_events[idx]['time'] -= origin
     
         elif self.mode == "Scroll":

@@ -4,7 +4,7 @@ from PyQt5 import QtCore
 class Plot_Scale_Line(object):
     def __init__(self, plot):
         self.v_grid_lines = list()
-        for i in range(11):
+        for i in range(35):
             grid_lines = pg.InfiniteLine(pos=i, pen=pg.mkPen(color=(192, 192, 192), style=QtCore.Qt.DotLine))
             self.v_grid_lines.append(grid_lines)
             plot.addItem(grid_lines)

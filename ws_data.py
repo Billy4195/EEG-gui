@@ -18,9 +18,10 @@ class WS_Data(object):
     """
     This class create a websocket and handle data which is received from socket
     """
-    def __init__(self, url, channel_num=64, scale_line_rela_val=2,
+    def __init__(self, url, channel_num=64, scale_line_rela_val=10,
          scale_line_real_val=3, data_window_height=10,
-         raw_plot_sample_rate=1000, update_time_interval=0.1):
+         raw_plot_sample_rate=1000, update_time_interval=0.1,
+         time_scale=10):
         """
         Create a websocket and setup its handler
 
@@ -47,6 +48,7 @@ class WS_Data(object):
         self.scale_line_real_val = scale_line_real_val
         self.data_window_height = data_window_height
         self.raw_plot_sample_rate = raw_plot_sample_rate
+        self.time_scale = time_scale
         self.decimated_data_time = list()
         self.decimated_data = list()
         self.transed_decimated_data = list()
@@ -168,12 +170,12 @@ class WS_Data(object):
         data = Raw_Data_Plot_Data(self.decimated_data_time, self.transed_decimated_data,
                                     self.events,mode=mode, channels=channels,
                                     cursor=self.cursor, plot_origin=self.plot_origin,
-                                    ch_label=self.ch_label)
+                                    ch_label=self.ch_label, window_size=self.time_scale)
 
         return data
 
     def clean_oudated_data(self, cursor):
-        outdated_time = cursor - 11
+        outdated_time = cursor - (self.time_scale+1)
         while self.decimated_data_time[0] < outdated_time:
             self.decimated_data_time.pop(0)
             for i in range(self.channel_num):
@@ -234,3 +236,7 @@ class WS_Data(object):
         })
         self.ws.send(dec_setting_msg)
 
+    def update_time_scale(self, time_scale):
+        self.time_scale = time_scale
+        if self.cursor:
+            self.plot_origin = self.cursor

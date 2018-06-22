@@ -25,7 +25,9 @@ class Raw_Data_Plot(QtGui.QWidget):
 
         self.setWindowTitle("Decimated Data Plot")
         self.timer_interval = 0.1
-        self.ws_data = WS_Data(url=ws_url, update_time_interval=self.timer_interval)
+        self.time_scale = 10
+        self.ws_data = WS_Data(url=ws_url, update_time_interval=self.timer_interval,
+                        time_scale=self.time_scale)
         self.curve_size = 27 # 1080 / 2 / 20
         self.selected_channels = list(range(1, 65))
         self.raw_data_mode = "Scan"
@@ -47,7 +49,7 @@ class Raw_Data_Plot(QtGui.QWidget):
         self.plot = pg.PlotWidget()
         self.plot.setMenuEnabled(enableMenu=False)
         self.plot.setMouseEnabled(x= False, y= False)
-        self.plot.setLimits(xMin=0, maxXRange=10)
+        self.plot.setLimits(xMin=0, xMax=10)
         self.plot.enableAutoRange(x=True, y=False)
         self.scroll = QtGui.QScrollBar()
 
@@ -202,6 +204,11 @@ class Raw_Data_Plot(QtGui.QWidget):
         scroll_change = -(event.angleDelta().y() // 120)
         scroll_val = self.scroll.value()
         self.scroll.setValue(scroll_val + scroll_change)
+
+    def update_time_scale(self, time_scale):
+        self.time_scale = time_scale
+        self.plot.setLimits(xMin=0, xMax=time_scale)
+        self.ws_data.update_time_scale(time_scale)
 
 if __name__ == "__main__":
     app = QtGui.QApplication([])
