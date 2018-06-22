@@ -20,7 +20,7 @@ class WS_Data(object):
     """
     def __init__(self, url, channel_num=64, scale_line_rela_val=2,
          scale_line_real_val=3, data_window_height=10,
-         raw_plot_sample_rate=1000):
+         raw_plot_sample_rate=1000, update_time_interval=0.1):
         """
         Create a websocket and setup its handler
 
@@ -58,7 +58,7 @@ class WS_Data(object):
             self.transed_decimated_data.append(list())
 
         self.cursor = None
-        self.update_time_interval = 0.1
+        self.update_time_interval = update_time_interval
 
         self.ws = websocket.WebSocketApp(url,
                                     on_message = self.on_message,

@@ -24,8 +24,8 @@ class Raw_Data_Plot(QtGui.QWidget):
             ws_url = url
 
         self.setWindowTitle("Decimated Data Plot")
-        self.ws_data = WS_Data(url=ws_url)
         self.timer_interval = 0.1
+        self.ws_data = WS_Data(url=ws_url, update_time_interval=self.timer_interval)
         self.curve_size = 27 # 1080 / 2 / 20
         self.selected_channels = list(range(1, 65))
         self.raw_data_mode = "Scan"
@@ -78,6 +78,7 @@ class Raw_Data_Plot(QtGui.QWidget):
         self.update_curves_size()
 
         self.event_lines = list()
+        #TODO increase number of event line
         for i in range(20):
             event_line = pg.InfiniteLine(pos=0)
             self.event_lines.append(event_line)
