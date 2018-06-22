@@ -50,7 +50,6 @@ class WS_Data(object):
         self.decimated_data_time = list()
         self.decimated_data = list()
         self.transed_decimated_data = list()
-        self.raw_sample_rate = 1000 #TODO ask from web socket
         self.plot_origin = None
         self.ch_label = list()
         self.events = list()
@@ -58,9 +57,6 @@ class WS_Data(object):
             self.decimated_data.append(list())
             self.transed_decimated_data.append(list())
 
-        self.raw_cache_size = 1000
-        self.file_pointer = None
-        self.csv_writer = None
         self.cursor = None
         self.update_time_interval = 0.1
 
