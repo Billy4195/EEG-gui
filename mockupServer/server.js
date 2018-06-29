@@ -55,6 +55,9 @@ class Server {
             },
             impedance: {
                 stream: false
+            },
+            FFT: {
+                stream: false
             }
         };
     }
@@ -76,6 +79,7 @@ class Server {
                 this.clientState.raw.stream = false;
                 this.clientState.decimation.stream = false;
                 this.clientState.impedance.stream = false;
+                this.clientState.FFT.stream = false;
             });
 
             const sendDecimate = () => {
@@ -101,6 +105,14 @@ class Server {
                 setTimeout(sendImpedance, 2000);
             }
             setTimeout(sendImpedance, 2000);
+
+            const sendFFT = () => {
+                if (this.clientState.FFT.stream) {
+                    ws.send(JSON.stringify(this.genPacket("FFT")));
+                }
+                setTimeout(sendFFT, 1000);
+            }
+            setTimeout(sendFFT, 1000);
         });
     }
     processMsg(ws, msg) {
@@ -136,6 +148,14 @@ class Server {
             }
         } else if (PT === "device") {
             this.sendRes("device", "response", ws);
+        } else if (PT === "FFT") {
+            if (COMMAND === "setting") {
+                this.clientState.FFT.stream = (msg["contents"]["enable"] == 'true' || msg["contents"]["enable"] == true);
+                this.sendRes("FFT", "ack", ws);
+
+            } else if (COMMAND === "request") {
+                this.sendRes("FFT", "response", ws);
+            }  
         }
     }
     sendRes(PT, resType, ws) {
@@ -238,6 +258,37 @@ class Server {
                     error: ""
                 }
             }));            
+        } else if (PT === "FFT" && resType === "ack") {
+            ws.send(JSON.stringify({
+                type: {
+                    type: resType,
+                    source_type: "algorithm",
+                    source_name: PT
+                },
+                name: null,
+                contents: {
+                    result: true
+                }
+            }));
+        } else if (PT === "FFT" && resType === "response") {
+            let index = -0.5;
+            ws.send(JSON.stringify({
+                type: {
+                    type: resType,
+                    source_type: "algorithm",
+                    source_name: PT
+                },
+                name: null,
+                contents: {
+                    enable: true,
+                    window_size: 2,
+                    windowinterval: 0.5,
+                    freq_range: [0,30],
+                    ch_label: ["Fp1", "Fp2", "Fz", "C1", "C2", "Pz", "POz", "Oz"],
+                    freq_label:  Array.from({length: 61}, () => { return (index += 0.5) }),
+                    data_size: [8,61]
+                }
+            }));
         }
     }
     genPacket(PT) {
@@ -310,6 +361,21 @@ class Server {
                     sync_tick: this.tick,
                     impedance: Array.from({length: 8}, () => Math.random() * 2000)
                 }
+            }
+        } else if (PT === "FFT") {
+            return {
+                type: {
+                    type: "data",
+                    source_tpye: "algorithm",
+                    source_name: "FFT"
+                },
+                name: null,
+                contents: {
+                    sync_tick: this.tick,
+                    data: Array.from({length: 8}, () => {
+                        return Array.from({length: 61}, () => Math.random() * 600);
+                    })
+                }              
             }
         } else {
             console.log("PT error:", PT);

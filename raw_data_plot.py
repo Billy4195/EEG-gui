@@ -2,7 +2,6 @@
 import time
 
 import pyqtgraph as pg
-from pyqtgraph.dockarea import *
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 from ws_data import WS_Data

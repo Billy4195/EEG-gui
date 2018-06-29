@@ -7,7 +7,6 @@ import time
 import threading
 import json
 import logging
-import csv
 from time import sleep
 import websocket
 

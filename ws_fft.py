@@ -7,15 +7,15 @@ import time
 import threading
 import json
 import logging
+import copy
 from time import sleep
-import websocket 
+import websocket
 
-class WS_Imp(object):
-    def __init__(self, contact_plot, url):
-        self.contact_plot = contact_plot
+class WS_FFT(object):
+    def __init__(self, FFT_plot, url):
+        self.FFT_plot = FFT_plot
         self.url = url
-        self.impedance_data = list()
-        self.channel_num = 8
+        self.FFT_data = list()
         self.tick = 0
 
         self.ws = websocket.WebSocketApp(url,
@@ -45,11 +45,15 @@ class WS_Imp(object):
         try:
             raw = json.loads(message)
             if raw["type"]["type"] == "data":
-                if raw["type"]["source_name"] == "impedance":
-                    self.add_impedance_data(raw)
+                if raw["type"]["source_name"] == "FFT":
+                    self.add_FFT_data(raw)
             elif raw["type"]["type"] == "response":
-                self.channel_num = raw["contents"]["ch_num"]
-                self.contact_plot.ch_label = raw["contents"]["ch_label"]                
+                self.FFT_plot.channel_num = raw["contents"]["data_size"][0]
+                self.FFT_plot.freq_num = raw["contents"]["data_size"][1]
+                self.FFT_plot.freq_range = raw["contents"]["freq_range"]
+                self.FFT_plot.freq_label = raw["contents"]["freq_label"]
+                self.FFT_plot.ch_label = raw["contents"]["ch_label"]
+                print (self.FFT_plot.ch_label)
             else:
                 pass
         except Exception as e:
@@ -67,10 +71,8 @@ class WS_Imp(object):
         """
         pass
     
-    def add_impedance_data(self, data):
-        if len(data['contents']['impedance']) != self.channel_num:
-            raise AssertionError("The received raw data unmatch channel num")
-        self.impedance_data.append(data['contents']['impedance'])
+    def add_FFT_data(self, data):
+        self.FFT_data.append(copy.deepcopy(data["contents"]['data']))
         self.tick = data["contents"]["sync_tick"]
 
     def clean_oudated_data(self):
@@ -78,7 +80,7 @@ class WS_Imp(object):
 
     def send_init_commands(self):
         dec_setting_msg = json.dumps({
-            "type": "imp"
+            "type": "FFT"
         })
         self.ws.send(dec_setting_msg)
 

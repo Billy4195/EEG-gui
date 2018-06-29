@@ -1,4 +1,9 @@
 #!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+__author__ = "kirintw and Billy Su"
+__license__ = "GPL-2.0"
+
 import time
 
 import pyqtgraph as pg

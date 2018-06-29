@@ -26,6 +26,7 @@ class WS_CLIENT(object):
 
         self.decimated_data_msg = list()
         self.impedance_data_msg = list()
+        self.FFT_data_msg = list()
 
         self.ws = websocket.WebSocketApp(url,
                                          on_message=self.on_message,
@@ -60,6 +61,8 @@ class WS_CLIENT(object):
                 self.decimated_data_msg.append(message)
             elif raw["type"]["source_name"] == "impedance":
                 self.impedance_data_msg.append(message)
+            elif raw["type"]["source_name"] == "FFT":
+                self.FFT_data_msg.append(message)
             else:
                 pass
         except Exception as e:
@@ -132,6 +135,23 @@ class WS_CLIENT(object):
             }            
         })     
         self.ws.send(imp_setting_msg)
+    
+    def send_setting_FFT(self, operation):
+        FFT_setting_msg = json.dumps({
+            "type": {
+                "type": "setting",
+                "target_tpye": "algorithm",
+                "target_name": "FFT"
+            },
+            "name": None,
+            "contents": {
+                "enable": operation,
+                "window_size": 2,
+                "window_interval": 0.5,
+                "freq_range": [0,30]
+            }      
+        })
+        self.ws.send(FFT_setting_msg)
 
     def send_request_raw(self): 
         raw_request_msg = json.dumps({
@@ -189,7 +209,29 @@ class WS_CLIENT(object):
                 "ch_label"
             ]                
         })
-        self.ws.send(imp_request_msg)   
+        self.ws.send(imp_request_msg)
+
+    def send_request_FFT(self):
+        FFT_request_msg = json.dumps({
+            "type": {
+                "type": "request",
+                "target_tpye": "algorithm",
+                "target_name": "FFT"
+            },
+            "name": None,
+            "contents": {
+                "requirement": [
+                    "enable",
+                    "window_size",
+                    "window_move",
+                    "freq_range",
+                    "freq_label",
+                    "data_size",
+                    "ch_label"
+                ]
+            }
+        }) 
+        self.ws.send(FFT_request_msg)  
 
     def add_raw_data(self, data):
         if self.recording_data:
@@ -219,6 +261,7 @@ class WS_CLIENT(object):
             if exc.errno == errno.EEXIST and os.path.isdir(path):
                 pass
             else: raise
+    
     def safe_open_w(self, path):
         self.mkdir_p(os.path.dirname(path))
         return open(path, 'w')
@@ -312,6 +355,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         self.ws_client = ws_client
         self.dec_client = None
         self.imp_client = None
+        self.FFT_client = None
 
     def check_origin(self, origin):
         return True
@@ -330,6 +374,11 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
                 self.imp_loop = tornado.ioloop.PeriodicCallback(
                     self.send_imp, 100)
                 self.imp_loop.start()
+            elif cmd["type"] == "FFT":
+                self.FFT_client = self
+                self.FFT_loop = tornado.ioloop.PeriodicCallback(
+                    self.send_FFT, 100)
+                self.FFT_loop.start()
             else:
                 pass
         except Exception as e:
@@ -340,7 +389,15 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             self.ws_client.send_setting_dec(False)
             self.dec_loop.stop()
             self.main_ui.signal_btn.setEnabled(True)
-            if self.main_ui.record_btn.isEnabled(): #check if other plot or record not running
+            #check if other plot or record not running
+            if self.main_ui.record_btn.isEnabled() and self.main_ui.spectrum_btn.isEnabled():
+                self.main_ui.contact_btn.setEnabled(True)
+        elif self == self.FFT_client:
+            self.ws_client.send_setting_FFT(False)
+            self.FFT_loop.stop()
+            self.main_ui.spectrum_btn.setEnabled(True)
+            #check if other plot or record not running
+            if self.main_ui.record_btn.isEnabled() and self.main_ui.signal_btn.isEnabled():
                 self.main_ui.contact_btn.setEnabled(True)
         elif self == self.imp_client:
             self.ws_client.send_setting_imp(False)
@@ -366,6 +423,18 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             try:
                 if self.ws_client.impedance_data_msg:
                     packet = self.ws_client.impedance_data_msg.pop(0)
+                    self.write_message(packet)
+                else:
+                    return
+            except Exception as e:
+                logging.error(str(e))
+                return
+    
+    def send_FFT(self):
+        while(1):
+            try:
+                if self.ws_client.FFT_data_msg:
+                    packet = self.ws_client.FFT_data_msg.pop(0)
                     self.write_message(packet)
                 else:
                     return
