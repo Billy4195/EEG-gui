@@ -1,6 +1,6 @@
 PyQt5==5.10
 PyQtChart==5.10
-pyqtgraph==0.10.0
+git+https://github.com/pyqtgraph/pyqtgraph.git@3d3d0a2
 websocket-client==0.47.0
 tornado==5.0.2
 matplotlib==2.2.2

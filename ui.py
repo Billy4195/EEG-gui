@@ -30,6 +30,7 @@ class EEG_Application(QtGui.QApplication):
 
         self.decimated_plot_proc = None
         self.contact_plot_proc = None
+        self.spectrum_proc = None
         self.setupUi()
         self.setupSignals()
         self.set_all_button_state(False) 
@@ -175,6 +176,7 @@ class EEG_Application(QtGui.QApplication):
         self.connect_btn.clicked.connect(self.init_ws)
         self.signal_btn.clicked.connect(self.decimated_handler)
         self.contact_btn.clicked.connect(self.contact_handler)
+        self.spectrum_btn.clicked.connect(self.spectrum_handler)
         self.record_btn.clicked.connect(self.start_recording)
         self.stop_btn.clicked.connect(self.stop_recording)
         self.file_path_select_btn.clicked.connect(self.select_file_path)
@@ -206,6 +208,18 @@ class EEG_Application(QtGui.QApplication):
             self.ws_client.send_setting_imp(True)
         except Exception as e:
             self.contact_plot_proc.kill()
+            logging.error(str(e))
+
+    def spectrum_handler(self):
+        if self.spectrum_proc:
+            if self.spectrum_proc.poll() is None:
+                return
+        try:
+            self.spectrum_btn.setEnabled(False)
+            self.contact_plot_proc = Popen(['python', 'fft_plot.py'])
+
+        except Exception as e:
+            self.spectrum_proc.kill()
             logging.error(str(e))
 
     def start_recording(self):
