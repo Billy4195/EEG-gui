@@ -5,7 +5,6 @@ __author__ = "kirintw and Billy Su"
 __license__ = "GPL-2.0"
 
 import pyqtgraph as pg
-from pyqtgraph.dockarea import *
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 from ws_fft import WS_FFT
@@ -19,14 +18,21 @@ class Spectrum_Plot(QtGui.QWidget):
             url = "ws://localhost:7777"
 
         #TODO setup ws
-        # self.ws_fft = WS_FFT(url)
+        self.ws_fft = WS_FFT(FFT_plot=self, url=url)
 
         self.setWindowTitle("Power Spectrum(FFT)")
         self.timer_interval = 0.5
-        self.ch_label = list()
         self.v_scale = 600
         self.h_min = 0
         self.h_max = 30
+
+        #getting these values from ws_fft
+        ######
+        self.channel_num = 0
+        self.freq_num = 0
+        self.freq_range = list()
+        self.freq_label = list()
+        ######
 
         self.init_ui()
         self.setup_signal_handler()
@@ -50,11 +56,15 @@ class Spectrum_Plot(QtGui.QWidget):
         # get data from websocket
 
         #fre_range = self.ws_fft.freq_range
-        import numpy as np
-        data = list()
-        for i in range(8):
-            data.append(list(np.random.randint(5, 100, 50)))
-        self.plot.draw(data)
+        # import numpy as np
+        # data = list()
+        # for i in range(8):
+        #     data.append(list(np.random.randint(5, 100, 50)))
+        if self.ws_fft.FFT_data:
+            print ("plotting")
+            self.plot.draw(self.ws_fft.FFT_data.pop(0))
+        else:
+            pass
 
 
 class Menu_bar(QtGui.QWidget):

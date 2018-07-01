@@ -5,7 +5,6 @@ __license__ = "GPL-2.0"
 
 from subprocess import Popen
 import pyqtgraph as pg
-from pyqtgraph.dockarea import *
 from PyQt5 import QtCore, QtGui, QtWidgets
 import numpy as np
 import time
@@ -135,25 +134,25 @@ class EEG_Application(QtGui.QApplication):
         path_label.setText("File Path:")
         self.file_path_input = QtGui.QLineEdit()
         self.file_path_select_btn = QtGui.QPushButton("...")
-        gridlayout.addWidget(path_label, 0, 0, 1, 2);
-        gridlayout.addWidget(self.file_path_input, 0, 2, 1, 2);
-        gridlayout.addWidget(self.file_path_select_btn, 0, 4, 1, 2);
+        gridlayout.addWidget(path_label, 0, 0, 1, 2)
+        gridlayout.addWidget(self.file_path_input, 0, 2, 1, 2)
+        gridlayout.addWidget(self.file_path_select_btn, 0, 4, 1, 2)
 
         name_label = QtWidgets.QLabel()
         name_label.setText("File Name:")
         self.file_name_input = QtGui.QLineEdit()
         self.file_type = QtGui.QComboBox()
         self.file_type.addItem(".csv")
-        gridlayout.addWidget(name_label, 1, 0, 1, 2);
-        gridlayout.addWidget(self.file_name_input, 1, 2, 1, 2);
-        gridlayout.addWidget(self.file_type, 1, 4, 1, 2);
+        gridlayout.addWidget(name_label, 1, 0, 1, 2)
+        gridlayout.addWidget(self.file_name_input, 1, 2, 1, 2)
+        gridlayout.addWidget(self.file_type, 1, 4, 1, 2)
 
         self.record_btn = QtGui.QPushButton("Start Recording")
         self.record_btn.setStyleSheet("background-color: blue")
         self.stop_btn = QtGui.QPushButton("Stop Recording")
         self.stop_btn.setStyleSheet("background-color: red")
-        gridlayout.addWidget(self.record_btn, 2, 0, 1, 3);
-        gridlayout.addWidget(self.stop_btn, 2, 3, 1, 3);
+        gridlayout.addWidget(self.record_btn, 2, 0, 1, 3)
+        gridlayout.addWidget(self.stop_btn, 2, 3, 1, 3)
         groupBox.setLayout(gridlayout)
         return groupBox
 
@@ -216,8 +215,11 @@ class EEG_Application(QtGui.QApplication):
                 return
         try:
             self.spectrum_btn.setEnabled(False)
-            self.contact_plot_proc = Popen(['python', 'fft_plot.py'])
-
+            self.contact_btn.setEnabled(False)
+            self.spectrum_proc = Popen(['python', 'fft_plot.py'])
+            self.ws_client.FFT_data_msg.clear()
+            self.ws_client.send_request_FFT()
+            self.ws_client.send_setting_FFT(True)
         except Exception as e:
             self.spectrum_proc.kill()
             logging.error(str(e))
@@ -259,7 +261,8 @@ class EEG_Application(QtGui.QApplication):
     def stop_recording(self):
         if self.state == "RECORDING":
             self.record_btn.setEnabled(True)
-            if self.signal_btn.isEnabled(): #check if other plot or record not running
+            #check if other plot or record not running
+            if self.signal_btn.isEnabled() and self.spectrum_btn.isEnabled(): 
                 self.contact_btn.setEnabled(True)
             self.ws_client.send_setting_raw(False)
             self.time_t.stop()

@@ -372,7 +372,7 @@ class Server {
                 contents: {
                     sync_tick: this.tick,
                     data: Array.from({length: 8}, () => {
-                        return Array.from({length: 61}, () => Math.random());
+                        return Array.from({length: 61}, () => Math.random() * 600);
                     })
                 }              
             }
