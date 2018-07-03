@@ -281,11 +281,12 @@ class Server {
                 name: null,
                 contents: {
                     enable: true,
-                    "window_size": 2,
-                    "windowinterval ": 0.5,
-                    "freq_range": [0,30],
-                    "freq_label":  Array.from({length: 61}, () => { return (index += 0.5) }),
-                    "data_size": [8,61]
+                    window_size: 2,
+                    windowinterval: 0.5,
+                    freq_range: [0,30],
+                    ch_label: ["Fp1", "Fp2", "Fz", "C1", "C2", "Pz", "POz", "Oz"],
+                    freq_label:  Array.from({length: 61}, () => { return (index += 0.5) }),
+                    data_size: [8,61]
                 }
             }));
         }

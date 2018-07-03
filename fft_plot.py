@@ -32,6 +32,7 @@ class Spectrum_Plot(QtGui.QWidget):
         self.freq_num = 0
         self.freq_range = list()
         self.freq_label = list()
+        self.ch_label = list()
         ######
 
         self.init_ui()
@@ -61,7 +62,6 @@ class Spectrum_Plot(QtGui.QWidget):
         # for i in range(8):
         #     data.append(list(np.random.randint(5, 100, 50)))
         if self.ws_fft.FFT_data:
-            print ("plotting")
             self.plot.draw(self.ws_fft.FFT_data.pop(0))
         else:
             pass

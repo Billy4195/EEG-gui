@@ -226,7 +226,8 @@ class WS_CLIENT(object):
                     "window_move",
                     "freq_range",
                     "freq_label",
-                    "data_size"
+                    "data_size",
+                    "ch_label"
                 ]
             }
         }) 

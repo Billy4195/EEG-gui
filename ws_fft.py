@@ -52,6 +52,8 @@ class WS_FFT(object):
                 self.FFT_plot.freq_num = raw["contents"]["data_size"][1]
                 self.FFT_plot.freq_range = raw["contents"]["freq_range"]
                 self.FFT_plot.freq_label = raw["contents"]["freq_label"]
+                self.FFT_plot.ch_label = raw["contents"]["ch_label"]
+                print (self.FFT_plot.ch_label)
             else:
                 pass
         except Exception as e:
