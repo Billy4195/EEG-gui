@@ -12,11 +12,12 @@ from time import sleep
 import websocket
 
 class WS_FFT(object):
-    def __init__(self, FFT_plot, url):
-        self.FFT_plot = FFT_plot
+    def __init__(self, url):
         self.url = url
         self.FFT_data = list()
         self.tick = 0
+        self.ch_label = None
+        self.channel_num = None
 
         self.ws = websocket.WebSocketApp(url,
                                     on_message = self.on_message,
@@ -48,12 +49,11 @@ class WS_FFT(object):
                 if raw["type"]["source_name"] == "FFT":
                     self.add_FFT_data(raw)
             elif raw["type"]["type"] == "response":
-                self.FFT_plot.channel_num = raw["contents"]["data_size"][0]
-                self.FFT_plot.freq_num = raw["contents"]["data_size"][1]
-                self.FFT_plot.freq_range = raw["contents"]["freq_range"]
-                self.FFT_plot.freq_label = raw["contents"]["freq_label"]
-                self.FFT_plot.ch_label = raw["contents"]["ch_label"]
-                print (self.FFT_plot.ch_label)
+                self.channel_num = raw["contents"]["data_size"][0]
+                self.freq_num = raw["contents"]["data_size"][1]
+                self.freq_range = raw["contents"]["freq_range"]
+                self.freq_label = raw["contents"]["freq_label"]
+                self.ch_label = raw["contents"]["ch_label"]
             else:
                 pass
         except Exception as e:

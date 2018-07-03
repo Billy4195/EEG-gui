@@ -28,7 +28,7 @@ class Raw_Data_Plot(QtGui.QWidget):
         self.ws_data = WS_Data(url=ws_url, update_time_interval=self.timer_interval,
                         time_scale=self.time_scale)
         self.curve_size = 27 # 1080 / 2 / 20
-        self.selected_channels = list(range(1, 65))
+        self.selected_channels = list(range(1, 64))
         self.raw_data_mode = "Scan"
         self.last_cursor = 0
         self.channel_selector_win = None
@@ -208,6 +208,10 @@ class Raw_Data_Plot(QtGui.QWidget):
         self.time_scale = time_scale
         self.plot.setLimits(xMin=0, xMax=time_scale)
         self.ws_data.update_time_scale(time_scale)
+
+    def update_selected_channels(self, channels):
+        self.selected_channels = channels
+        self.update_curves_size()
 
 if __name__ == "__main__":
     app = QtGui.QApplication([])

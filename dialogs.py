@@ -25,17 +25,16 @@ class ChannelSelector(CustomizedDialog):
         self.selector = QtGui.QListWidget()
         self.selector.setSelectionMode(QtGui.QAbstractItemView.MultiSelection)
         if len(self.parent.ws_data.ch_label) is 0:
-            for i in range(1, 65):
+            for i in range(1 ,self.parent.ws_data.channel_num+1):
                 item = QtGui.QListWidgetItem(self.selector)
                 item.setText("Channel {}".format(i))
                 item.setData(QtCore.Qt.UserRole, i)
                 if i in self.parent.selected_channels:
                     item.setSelected(True)
         else:
-            for i in range(1, 65):
+            for i, ch_name in enumerate(self.parent.ws_data.ch_label, start=1):
                 item = QtGui.QListWidgetItem(self.selector)
-                item.setText("Channel {}".format(i))
-                item.setText(self.parent.ws_data.ch_label[i - 1])
+                item.setText(ch_name)
                 item.setData(QtCore.Qt.UserRole, i)
                 if i in self.parent.selected_channels:
                     item.setSelected(True)
@@ -58,8 +57,8 @@ class ChannelSelector(CustomizedDialog):
         vlayout.addWidget(self.button_box)
 
     def channel_select_handler(self):
-        self.parent.selected_channels = sorted([item.data(QtCore.Qt.UserRole) for item in self.selector.selectedItems()])
-        self.parent.update_curves_size()
+        channels = sorted([item.data(QtCore.Qt.UserRole) for item in self.selector.selectedItems()])
+        self.parent.update_selected_channels(channels)
         self.close()
 
     def select_all_channels(self):

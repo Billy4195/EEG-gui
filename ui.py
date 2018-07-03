@@ -288,3 +288,5 @@ class EEG_Application(QtGui.QApplication):
             self.decimated_plot_proc.kill()
         if self.contact_plot_proc and self.contact_plot_proc.poll() is None:
             self.contact_plot_proc.kill()
+        if self.spectrum_proc and self.spectrum_proc.poll() is None:
+            self.spectrum_proc.kill()
