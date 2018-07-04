@@ -14,6 +14,7 @@ import json
 import logging
 import math
 import copy
+import os
 from ws_main import WS_CLIENT, WS_SERVER
 from raw_data_plot import Raw_Data_Plot
 import os
@@ -187,7 +188,10 @@ class EEG_Application(QtGui.QApplication):
         try:
             self.signal_btn.setEnabled(False)
             self.contact_btn.setEnabled(False)
-            self.decimated_plot_proc = Popen(['python', 'raw_data_plot.py'])
+            if os.name is 'posix':
+                self.decimated_plot_proc = Popen(['python3', 'raw_data_plot.py'])
+            else:
+                self.decimated_plot_proc = Popen(['python', 'raw_data_plot.py'])
             self.ws_client.decimated_data_msg.clear()
             self.ws_client.send_request_dec()
             self.ws_client.send_setting_dec(True)
@@ -201,7 +205,10 @@ class EEG_Application(QtGui.QApplication):
                 return
         try:
             self.set_all_button_state(False)
-            self.contact_plot_proc = Popen(['python', 'contact_plot.py'])
+            if os.name is 'posix':
+                self.contact_plot_proc = Popen(['python3', 'contact_plot.py'])
+            else:
+                self.contact_plot_proc = Popen(['python', 'contact_plot.py'])
             self.ws_client.impedance_data_msg.clear()
             self.ws_client.send_request_imp()
             self.ws_client.send_setting_imp(True)
@@ -216,7 +223,10 @@ class EEG_Application(QtGui.QApplication):
         try:
             self.spectrum_btn.setEnabled(False)
             self.contact_btn.setEnabled(False)
-            self.spectrum_proc = Popen(['python', 'fft_plot.py'])
+            if os.name is 'posix':
+                self.spectrum_proc = Popen(['python3', 'fft_plot.py'])
+            else:            
+                self.spectrum_proc = Popen(['python', 'fft_plot.py'])
             self.ws_client.FFT_data_msg.clear()
             self.ws_client.send_request_FFT()
             self.ws_client.send_setting_FFT(True)
