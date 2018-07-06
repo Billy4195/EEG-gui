@@ -58,6 +58,9 @@ class Server {
             },
             FFT: {
                 stream: false
+            },
+            powerBand: {
+                stream: false
             }
         };
     }
@@ -80,6 +83,7 @@ class Server {
                 this.clientState.decimation.stream = false;
                 this.clientState.impedance.stream = false;
                 this.clientState.FFT.stream = false;
+                this.clientState.powerBand.stream = false;
             });
 
             const sendDecimate = () => {
@@ -113,6 +117,14 @@ class Server {
                 setTimeout(sendFFT, 1000);
             }
             setTimeout(sendFFT, 1000);
+
+            const sendPowerBand = () => {
+                if (this.clientState.powerBand.stream) {
+                    ws.send(JSON.stringify(this.genPacket("PowerBand")));
+                }
+                setTimeout(sendPowerBand, 1000);
+            }
+            setTimeout(sendPowerBand, 1000);
         });
     }
     processMsg(ws, msg) {
@@ -155,6 +167,14 @@ class Server {
 
             } else if (COMMAND === "request") {
                 this.sendRes("FFT", "response", ws);
+            }  
+        } else if (PT === "PowerBand") {
+            if (COMMAND === "setting") {
+                this.clientState.powerBand.stream = (msg["contents"]["enable"] == 'true' || msg["contents"]["enable"] == true);
+                this.sendRes("PowerBand", "ack", ws);
+
+            } else if (COMMAND === "request") {
+                this.sendRes("PowerBand", "response", ws);
             }  
         }
     }
@@ -282,11 +302,40 @@ class Server {
                 contents: {
                     enable: true,
                     window_size: 2,
-                    windowinterval: 0.5,
+                    window_interval: 0.5,
                     freq_range: [0,30],
                     ch_label: ["Fp1", "Fp2", "Fz", "C1", "C2", "Pz", "POz", "Oz"],
                     freq_label:  Array.from({length: 61}, () => { return (index += 0.5) }),
                     data_size: [8,61]
+                }
+            }));
+        } else if (PT === "PowerBand" && resType === "ack") {
+            ws.send(JSON.stringify({
+                type: {
+                    type: resType,
+                    source_type: "algorithm",
+                    source_name: PT
+                },
+                name: null,
+                contents: {
+                    result: true
+                }                
+            }));
+        } else if (PT === "PowerBand" && resType === "response") {
+            ws.send(JSON.stringify({
+                type: {
+                    type: resType,
+                    source_type: "algorithm",
+                    source_name: PT
+                },
+                name: null,
+                contents: {
+                    enable: true,
+                    window_size: 2,
+                    window_interval: 0.5,
+                    smooth: 4,
+                    ch_num: 8,
+                    ch_label: ["Fp1", "Fp2", "Fz", "C1", "C2", "Pz", "POz", "Oz"]
                 }
             }));
         }
@@ -376,6 +425,27 @@ class Server {
                         return Array.from({length: 61}, () => Math.random() * 600);
                     })
                 }              
+            }
+        } else if (PT === "PowerBand") {
+            return {
+                type: {
+                    type: "data",
+                    source_tpye: "algorithm",
+                    source_name: "PowerBand"
+                },
+                name: null,
+                contents: {
+                    sync_tick: this.tick,
+                    power: Array.from({length: 8}, () => {
+                        return Array.from({length: 8}, () => Math.abs(Math.sin(this.coe)) * 10);
+                    }),
+                    z_score_all: Array.from({length: 8}, () => {
+                        return Array.from({length: 8}, () => Math.sin(this.coe));
+                    }),
+                    z_score_each: Array.from({length: 8}, () => {
+                        return Array.from({length: 8}, () => Math.sin(this.coe));
+                    }),
+                }                   
             }
         } else {
             console.log("PT error:", PT);

@@ -29,6 +29,7 @@ class WS_CLIENT(object):
         self.decimated_data_msg = list()
         self.impedance_data_msg = list()
         self.FFT_data_msg = list()
+        self.PB_data_msg = list()
 
         self.ws = websocket.WebSocketApp(url,
                                          on_message=self.on_message,
@@ -66,6 +67,8 @@ class WS_CLIENT(object):
                 self.impedance_data_msg.append(message)
             elif raw["type"]["source_name"] == "FFT":
                 self.FFT_data_msg.append(message)
+            elif raw["type"]["source_name"] == "PowerBand":
+                self.PB_data_msg.append(message)
             else:
                 pass
         except Exception as e:
@@ -156,6 +159,23 @@ class WS_CLIENT(object):
         })
         self.ws.send(FFT_setting_msg)
 
+    def send_setting_PB(self, operation):
+        PB_setting_msg = json.dumps({
+            "type": {
+                "type": "setting",
+                "target_tpye": "algorithm",
+                "target_name": "PowerBand"
+            },
+            "name": None,
+            "contents": {
+                "enable": operation,
+                "window_size": 2,
+                "window_interval": 0.5,
+                "smooth": 4
+            }
+        })
+        self.ws.send(PB_setting_msg)
+
     def send_request_raw(self):
         raw_request_msg = json.dumps({
             "type": {
@@ -235,6 +255,27 @@ class WS_CLIENT(object):
             }
         })
         self.ws.send(FFT_request_msg)
+
+    def send_request_PB(self):
+        PB_request_msg = json.dumps({
+            "type": {
+                "type": "request",
+                "target_tpye": "algorithm",
+                "target_name": "PowerBand"
+            },
+            "name": None,
+            "contents": {
+                "requirement": [
+                    "enable",
+                    "window_size",
+                    "window_interval",
+                    "smooth",
+                    "ch_num",
+                    "ch_label"
+                ]
+            }
+        })
+        self.ws.send(PB_request_msg)
 
     def add_raw_data(self, data):
         if self.recording_data:
@@ -338,10 +379,12 @@ class WS_CLIENT(object):
 class WS_SERVER(object):
     def __init__(self, main_ui, ws_client, port):
         self.fft_context = FFT_Context()
+        self.pb_context = PB_Context()
         self.port = port
         self.ws_app = tornado.web.Application([
             (r"/", WebSocketHandler, {
                 'fft_context': self.fft_context,
+                'pb_context': self.pb_context,
                 'ws_client': ws_client,
                 'main_ui': main_ui
             })
@@ -363,9 +406,17 @@ class FFT_Context(object):
         self.TF_client = None
 
 
+class PB_Context(object):
+    def __init__(self):
+        self.loop = None
+        self.bar_client = None
+        self.topo_client = None
+
+
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
-    def initialize(self, fft_context, ws_client, main_ui):
+    def initialize(self, fft_context, pb_context, ws_client, main_ui):
         self.fft_context = fft_context
+        self.pb_context = pb_context
         self.main_ui = main_ui
         self.ws_client = ws_client
         self.dec_client = None
@@ -400,7 +451,8 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
                     self.ws_client.FFT_data_msg.clear()
                     self.ws_client.send_setting_FFT(True)
                     if self.fft_context.loop is None:
-                        self.fft_context.loop = tornado.ioloop.PeriodicCallback(self.send_FFT, 100)
+                        self.fft_context.loop = tornado.ioloop.PeriodicCallback(
+                            self.send_FFT, 100)
                         self.fft_context.loop.start()
                 self.ws_client.send_request_FFT()
             elif cmd["type"] == "FFT_TF":
@@ -409,9 +461,30 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
                     self.ws_client.FFT_data_msg.clear()
                     self.ws_client.send_setting_FFT(True)
                     if self.fft_context.loop is None:
-                        self.fft_context.loop = tornado.ioloop.PeriodicCallback(self.send_FFT, 100)
+                        self.fft_context.loop = tornado.ioloop.PeriodicCallback(
+                            self.send_FFT, 100)
                         self.fft_context.loop.start()
                 self.ws_client.send_request_FFT()
+            elif cmd["type"] == "PB_bar":
+                self.pb_context.bar_client = self
+                if self.pb_context.topo_client is None:
+                    self.ws_client.PB_data_msg.clear()
+                    self.ws_client.send_setting_PB(True)
+                    if self.pb_context.loop is None:
+                        self.pb_context.loop = tornado.ioloop.PeriodicCallback(
+                            self.send_PB, 100)
+                        self.pb_context.loop.start()
+                self.ws_client.send_request_PB()
+            elif cmd["type"] == "PB_topo":
+                self.pb_context.topo_client = self
+                if self.pb_context.bar_client is None:
+                    self.ws_client.PB_data_msg.clear()
+                    self.ws_client.send_setting_PB(True)
+                    if self.pb_context.loop is None:
+                        self.pb_context.loop = tornado.ioloop.PeriodicCallback(
+                            self.send_PB, 100)
+                        self.pb_context.loop.start()
+                self.ws_client.send_request_PB()
             else:
                 pass
         except Exception as e:
@@ -441,6 +514,24 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
                     self.fft_context.loop = None
             self.fft_context.TF_client = None
             self.main_ui.TF_btn.setEnabled(True)
+            self.main_ui.update_contact_btn_state()
+        elif self == self.pb_context.bar_client:
+            if self.pb_context.topo_client is None:
+                self.ws_client.send_setting_PB(False)
+                if self.pb_context.loop is not None:
+                    self.pb_context.loop.stop()
+                    self.pb_context.loop = None
+            self.pb_context.bar_client = None
+            self.main_ui.bar_btn.setEnabled(True)
+            self.main_ui.update_contact_btn_state()
+        elif self == self.pb_context.topo_client:
+            if self.pb_context.bar_client is None:
+                self.ws_client.send_setting_PB(False)
+                if self.pb_context.loop is not None:
+                    self.pb_context.loop.stop()
+                    self.pb_context.loop = None
+            self.pb_context.topo_client = None
+            self.main_ui.topo_btn.setEnabled(True)
             self.main_ui.update_contact_btn_state()
         elif self == self.imp_client:
             self.ws_client.send_setting_imp(False)
@@ -483,6 +574,21 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
                         self.fft_context.TF_client.write_message(packet)
                     if self.fft_context.PS_client is not None:
                         self.fft_context.PS_client.write_message(packet)
+                else:
+                    return
+            except Exception as e:
+                logging.error(str(e))
+                return
+
+    def send_PB(self):
+        while(1):
+            try:
+                if self.ws_client.PB_data_msg:
+                    packet = self.ws_client.PB_data_msg.pop(0)
+                    if self.pb_context.bar_client is not None:
+                        self.pb_context.bar_client.write_message(packet)
+                    if self.pb_context.topo_client is not None:
+                        self.pb_context.topo_client.write_message(packet)
                 else:
                     return
             except Exception as e:

@@ -32,6 +32,8 @@ class EEG_Application(QtGui.QApplication):
         self.contact_plot_proc = None
         self.spectrum_proc = None
         self.TF_proc = None
+        self.bar_proc = None
+        self.topo_proc = None
         self.setupUi()
         self.setupSignals()
         self.set_all_button_state(False) 
@@ -47,7 +49,7 @@ class EEG_Application(QtGui.QApplication):
         """Create Basic UI layout"""
         self.main_win.setObjectName("MainWindow")
         self.main_win.setWindowTitle("EEG")
-        self.main_win.resize(400, 800)
+        self.main_win.resize(500, 800)
         self.control_panel = QtGui.QWidget()
         self.main_win.setCentralWidget(self.control_panel)
 
@@ -101,8 +103,8 @@ class EEG_Application(QtGui.QApplication):
         self.device_id.setText(id)
         self.sampling_rate.setText(str(sample_rate) + " sps")
         self.Battery_state.setText(str(bettery) + "%")
-        self.resolution.setText(str(resolution) + " bit")        
-    
+        self.resolution.setText(str(resolution) + " bit")
+
     def plot_group(self):
         groupBox = QtGui.QGroupBox("Plot")
 
@@ -110,12 +112,16 @@ class EEG_Application(QtGui.QApplication):
         self.signal_btn = QtGui.QPushButton("Signal")
         self.spectrum_btn = QtGui.QPushButton("Spectrum")
         self.TF_btn = QtGui.QPushButton("Time-Freq.")
+        self.bar_btn = QtGui.QPushButton("Bar")
+        self.topo_btn = QtGui.QPushButton("Topographies")
 
         gridlayout = QtGui.QGridLayout()
         gridlayout.addWidget(self.contact_btn, 0, 0, 1, 1)
         gridlayout.addWidget(self.signal_btn, 0, 1, 1, 1)
         gridlayout.addWidget(self.spectrum_btn, 0, 2, 1, 1)
         gridlayout.addWidget(self.TF_btn, 0, 3, 1, 1)
+        gridlayout.addWidget(self.bar_btn, 0, 4, 1, 1)
+        gridlayout.addWidget(self.topo_btn, 0, 5, 1, 1)
 
         groupBox.setLayout(gridlayout)
         return groupBox
@@ -125,10 +131,12 @@ class EEG_Application(QtGui.QApplication):
         self.contact_btn.setEnabled(operation)
         self.spectrum_btn.setEnabled(operation)
         self.TF_btn.setEnabled(operation)
+        self.bar_btn.setEnabled(operation)
+        self.topo_btn.setEnabled(operation)
         self.record_btn.setEnabled(operation)
     
     def update_contact_btn_state(self):
-        if self.record_btn.isEnabled() and self.signal_btn.isEnabled() and self.spectrum_btn.isEnabled() and self.TF_btn.isEnabled():
+        if self.record_btn.isEnabled() and self.signal_btn.isEnabled() and self.spectrum_btn.isEnabled() and self.TF_btn.isEnabled() and self.bar_btn.isEnabled() and self.topo_btn.isEnabled():
             self.contact_btn.setEnabled(True)
         else:
             self.contact_btn.setEnabled(False)
@@ -185,6 +193,8 @@ class EEG_Application(QtGui.QApplication):
         self.contact_btn.clicked.connect(self.contact_handler)
         self.spectrum_btn.clicked.connect(self.spectrum_handler)
         self.TF_btn.clicked.connect(self.TF_handler)
+        self.bar_btn.clicked.connect(self.bar_handler)
+        self.topo_btn.clicked.connect(self.topo_handler)
         self.record_btn.clicked.connect(self.start_recording)
         self.stop_btn.clicked.connect(self.stop_recording)
         self.file_path_select_btn.clicked.connect(self.select_file_path)
@@ -246,6 +256,36 @@ class EEG_Application(QtGui.QApplication):
                 self.TF_proc = Popen(['python', 'TF_plot.py'])
         except Exception as e:
             self.TF_proc.kill()
+            logging.error(str(e))
+    
+    def bar_handler(self):
+        if self.bar_proc:
+            if self.bar_proc.poll() is None:
+                return
+        try:
+            self.bar_btn.setEnabled(False)
+            self.contact_btn.setEnabled(False)
+            if os.name is 'posix':
+                self.bar_proc = Popen(['python3', 'bar_plot.py'])
+            else:            
+                self.bar_proc = Popen(['python', 'bar_plot.py'])
+        except Exception as e:
+            self.bar_proc.kill()
+            logging.error(str(e))
+
+    def topo_handler(self):
+        if self.topo_proc:
+            if self.topo_proc.poll() is None:
+                return
+        try:
+            self.topo_btn.setEnabled(False)
+            self.contact_btn.setEnabled(False)
+            if os.name is 'posix':
+                self.topo_proc = Popen(['python3', 'topo_plot.py'])
+            else:            
+                self.topo_proc = Popen(['python', 'topo_plot.py'])
+        except Exception as e:
+            self.topo_proc.kill()
             logging.error(str(e))
 
     def start_recording(self):
@@ -315,3 +355,7 @@ class EEG_Application(QtGui.QApplication):
             self.spectrum_proc.kill()
         if self.TF_proc and self.TF_proc.poll() is None:
             self.TF_proc.kill()
+        if self.bar_proc and self.bar_proc.poll() is None:
+            self.bar_proc.kill()
+        if self.topo_proc and self.topo_proc.poll() is None:
+            self.topo_proc.kill()
