@@ -1,4 +1,5 @@
-import os, os.path
+import os
+import os.path
 import errno
 import time
 import threading
@@ -12,6 +13,7 @@ import asyncio
 import logging
 import csv
 
+
 class WS_CLIENT(object):
     def __init__(self, main_ui, url):
         self.url = url
@@ -22,7 +24,7 @@ class WS_CLIENT(object):
         self.raw_data_events = list()
         self.recording_data = False
         self.record_start_tick = None
-        self.raw_sample_rate = 1000 #TODO ask from web socket
+        self.raw_sample_rate = 1000  # TODO ask from web socket
 
         self.decimated_data_msg = list()
         self.impedance_data_msg = list()
@@ -54,7 +56,8 @@ class WS_CLIENT(object):
         try:
             raw = json.loads(message)
             if raw["type"]["source_name"] == "device":
-                self.main_ui.set_device_info('mockID', raw["contents"]["sampling_rate"], raw["contents"]["resolution"], raw["contents"]["battery"])
+                self.main_ui.set_device_info(
+                    'mockID', raw["contents"]["sampling_rate"], raw["contents"]["resolution"], raw["contents"]["battery"])
             elif raw["type"]["source_name"] == "raw" and raw["type"]["type"] == "data":
                 self.add_raw_data(raw)
             elif raw["type"]["source_name"] == "decimation":
@@ -88,7 +91,7 @@ class WS_CLIENT(object):
                 "target_name": "device"
             },
             "name": None,
-            "contents": "device info"           
+            "contents": "device info"
         })
         self.ws.send(device_request_msg)
 
@@ -132,10 +135,10 @@ class WS_CLIENT(object):
             "name": None,
             "contents": {
                 "enable": operation
-            }            
-        })     
+            }
+        })
         self.ws.send(imp_setting_msg)
-    
+
     def send_setting_FFT(self, operation):
         FFT_setting_msg = json.dumps({
             "type": {
@@ -148,12 +151,12 @@ class WS_CLIENT(object):
                 "enable": operation,
                 "window_size": 2,
                 "window_interval": 0.5,
-                "freq_range": [0,30]
-            }      
+                "freq_range": [0, 30]
+            }
         })
         self.ws.send(FFT_setting_msg)
 
-    def send_request_raw(self): 
+    def send_request_raw(self):
         raw_request_msg = json.dumps({
             "type": {
                 "type": "request",
@@ -170,9 +173,9 @@ class WS_CLIENT(object):
                     "ch_label"
                 ]
             }
-        })      
+        })
         self.ws.send(raw_request_msg)
-    
+
     def send_request_dec(self):
         dec_request_msg = json.dumps({
             "type": {
@@ -200,14 +203,14 @@ class WS_CLIENT(object):
                 "type": "request",
                 "target_tpye": "device",
                 "target_name": "impedance"
-            },           
+            },
             "name": None,
             "contents": [
                 "enable",
                 "sps_origin",
                 "ch_num",
                 "ch_label"
-            ]                
+            ]
         })
         self.ws.send(imp_request_msg)
 
@@ -230,22 +233,22 @@ class WS_CLIENT(object):
                     "ch_label"
                 ]
             }
-        }) 
-        self.ws.send(FFT_request_msg)  
+        })
+        self.ws.send(FFT_request_msg)
 
     def add_raw_data(self, data):
         if self.recording_data:
             contents = data["contents"]
-            #TODO check event is single or multiple
+            # TODO check event is single or multiple
             if isinstance(contents["sync_tick"], list):
                 for eeg, tick, e_id, e_du in zip(contents["eeg"],
-                                    contents["sync_tick"],
-                                    contents["event"]["event_id"],
-                                    contents["event"]["event_duration"]):
+                                                 contents["sync_tick"],
+                                                 contents["event"]["event_id"],
+                                                 contents["event"]["event_duration"]):
                     self.raw_data.append(eeg)
                     self.raw_data_ticks.append(tick)
                     self.raw_data_events.append(dict(event_id=e_id,
-                                                    event_duration=e_du))
+                                                     event_duration=e_du))
             else:
                 self.raw_data.append(contents["eeg"])
                 self.raw_data_ticks.append(contents["sync_tick"])
@@ -257,11 +260,12 @@ class WS_CLIENT(object):
     def mkdir_p(self, path):
         try:
             os.makedirs(path)
-        except OSError as exc: # Python >2.5
+        except OSError as exc:  # Python >2.5
             if exc.errno == errno.EEXIST and os.path.isdir(path):
                 pass
-            else: raise
-    
+            else:
+                raise
+
     def safe_open_w(self, path):
         self.mkdir_p(os.path.dirname(path))
         return open(path, 'w')
@@ -278,7 +282,7 @@ class WS_CLIENT(object):
         first_row = list()
         first_row.append("Time:{}Hz".format(self.raw_sample_rate))
         first_row.append("Epoch")
-        #TODO chagne to channel name
+        # TODO chagne to channel name
         for i in range(1, 65):
             first_row.append("Channel_{}".format(i))
         first_row.append("Event ID")
@@ -307,10 +311,10 @@ class WS_CLIENT(object):
 
                 time = (tick - self.record_start_tick) / self.raw_sample_rate
                 epoch = 0
-                event_id = ":".join([ str(id) for id in events["event_id"] ])
-                event_date = ":".join([ str(time) for e in events["event_id"] ])
-                event_duration = ":".join([ str(duration)
-                                    for duration in events["event_duration"] ])
+                event_id = ":".join([str(id) for id in events["event_id"]])
+                event_date = ":".join([str(time) for e in events["event_id"]])
+                event_duration = ":".join([str(duration)
+                                           for duration in events["event_duration"]])
 
                 row.append(time)
                 row.append(epoch)
@@ -330,11 +334,14 @@ class WS_CLIENT(object):
         self.file_pointer = None
         self.csv_writer = None
 
+
 class WS_SERVER(object):
     def __init__(self, main_ui, ws_client, port):
+        self.fft_context = FFT_Context()
         self.port = port
         self.ws_app = tornado.web.Application([
             (r"/", WebSocketHandler, {
+                'fft_context': self.fft_context,
                 'ws_client': ws_client,
                 'main_ui': main_ui
             })
@@ -349,14 +356,20 @@ class WS_SERVER(object):
         tornado.ioloop.IOLoop.instance().start()
 
 
+class FFT_Context(object):
+    def __init__(self):
+        self.loop = None
+        self.PS_client = None
+        self.TF_client = None
+
+
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
-    def initialize(self, ws_client, main_ui):
+    def initialize(self, fft_context, ws_client, main_ui):
+        self.fft_context = fft_context
         self.main_ui = main_ui
         self.ws_client = ws_client
         self.dec_client = None
         self.imp_client = None
-        self.FFT_PS_client = None
-        self.FFT_TF_client = None
 
     def check_origin(self, origin):
         return True
@@ -382,23 +395,23 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
                     self.send_imp, 100)
                 self.imp_loop.start()
             elif cmd["type"] == "FFT_PS":
-                if self.FFT_TF_client is None:
+                self.fft_context.PS_client = self
+                if self.fft_context.TF_client is None:
                     self.ws_client.FFT_data_msg.clear()
                     self.ws_client.send_setting_FFT(True)
+                    if self.fft_context.loop is None:
+                        self.fft_context.loop = tornado.ioloop.PeriodicCallback(self.send_FFT, 100)
+                        self.fft_context.loop.start()
                 self.ws_client.send_request_FFT()
-                self.FFT_PS_client = self
-                if self.FFT_TF_client is None:
-                    self.FFT_loop = tornado.ioloop.PeriodicCallback(self.send_FFT, 100)
-                    self.FFT_loop.start()
             elif cmd["type"] == "FFT_TF":
-                if self.FFT_PS_client is None:
+                self.fft_context.TF_client = self
+                if self.fft_context.PS_client is None:
                     self.ws_client.FFT_data_msg.clear()
                     self.ws_client.send_setting_FFT(True)
+                    if self.fft_context.loop is None:
+                        self.fft_context.loop = tornado.ioloop.PeriodicCallback(self.send_FFT, 100)
+                        self.fft_context.loop.start()
                 self.ws_client.send_request_FFT()
-                self.FFT_TF_client = self
-                if self.FFT_PS_client is None:
-                    self.FFT_loop = tornado.ioloop.PeriodicCallback(self.send_FFT, 100)
-                    self.FFT_loop.start()
             else:
                 pass
         except Exception as e:
@@ -411,18 +424,22 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             self.dec_client = None
             self.main_ui.signal_btn.setEnabled(True)
             self.main_ui.update_contact_btn_state()
-        elif self == self.FFT_PS_client:
-            if self.FFT_TF_client is None:
+        elif self == self.fft_context.PS_client:
+            if self.fft_context.TF_client is None:
                 self.ws_client.send_setting_FFT(False)
-                self.FFT_loop.stop()
-            self.FFT_PS_client = None
+                if self.fft_context.loop is not None:
+                    self.fft_context.loop.stop()
+                    self.fft_context.loop = None
+            self.fft_context.PS_client = None
             self.main_ui.spectrum_btn.setEnabled(True)
             self.main_ui.update_contact_btn_state()
-        elif self == self.FFT_TF_client:
-            if self.FFT_PS_client is None:
+        elif self == self.fft_context.TF_client:
+            if self.fft_context.PS_client is None:
                 self.ws_client.send_setting_FFT(False)
-                self.FFT_loop.stop()
-            self.FFT_TF_client = None
+                if self.fft_context.loop is not None:
+                    self.fft_context.loop.stop()
+                    self.fft_context.loop = None
+            self.fft_context.TF_client = None
             self.main_ui.TF_btn.setEnabled(True)
             self.main_ui.update_contact_btn_state()
         elif self == self.imp_client:
@@ -444,7 +461,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             except Exception as e:
                 logging.error(str(e))
                 return
-    
+
     def send_imp(self):
         while(1):
             try:
@@ -456,16 +473,16 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             except Exception as e:
                 logging.error(str(e))
                 return
-    
+
     def send_FFT(self):
         while(1):
             try:
                 if self.ws_client.FFT_data_msg:
                     packet = self.ws_client.FFT_data_msg.pop(0)
-                    if self.FFT_TF_client is not None:
-                        self.FFT_TF_client.write_message(packet)
-                    if self.FFT_PS_client is not None:
-                        self.FFT_PS_client.write_message(packet)
+                    if self.fft_context.TF_client is not None:
+                        self.fft_context.TF_client.write_message(packet)
+                    if self.fft_context.PS_client is not None:
+                        self.fft_context.PS_client.write_message(packet)
                 else:
                     return
             except Exception as e:
