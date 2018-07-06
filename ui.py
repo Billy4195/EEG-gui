@@ -244,16 +244,16 @@ class EEG_Application(QtGui.QApplication):
         try:
             self.TF_btn.setEnabled(False)
             self.contact_btn.setEnabled(False)        
-            # if os.name is 'posix':
-            #     self.TF_proc = Popen(['python3', 'TF_plot.py'])
-            # else:            
-            #     self.TF_proc = Popen(['python', 'TF_plot.py'])
+            if os.name is 'posix':
+                self.TF_proc = Popen(['python3', 'TF_plot.py'])
+            else:            
+                self.TF_proc = Popen(['python', 'TF_plot.py'])
             if self.spectrum_btn.isEnabled():
                 self.ws_client.FFT_data_msg.clear()
                 self.ws_client.send_setting_FFT(True)
             self.ws_client.send_request_FFT()
         except Exception as e:
-            #self.TF_proc.kill()
+            self.TF_proc.kill()
             logging.error(str(e))
 
     def start_recording(self):

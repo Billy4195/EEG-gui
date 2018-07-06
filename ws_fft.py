@@ -19,7 +19,7 @@ class WS_FFT(object):
         self.url = url
         self.plot_name = plot_name
         self.FFT_data = list()
-        self.tick = 0
+        self.ticks = list()
         self.ch_label = None
         self.channel_num = None
 
@@ -77,7 +77,7 @@ class WS_FFT(object):
     
     def add_FFT_data(self, data):
         self.FFT_data.append(copy.deepcopy(data["contents"]['data']))
-        self.tick = data["contents"]["sync_tick"]
+        self.ticks.append(data["contents"]["sync_tick"])
 
     def clean_oudated_data(self):
         pass
