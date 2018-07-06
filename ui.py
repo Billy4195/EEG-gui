@@ -31,6 +31,7 @@ class EEG_Application(QtGui.QApplication):
         self.decimated_plot_proc = None
         self.contact_plot_proc = None
         self.spectrum_proc = None
+        self.TF_proc = None
         self.setupUi()
         self.setupSignals()
         self.set_all_button_state(False) 
@@ -177,6 +178,7 @@ class EEG_Application(QtGui.QApplication):
         self.signal_btn.clicked.connect(self.decimated_handler)
         self.contact_btn.clicked.connect(self.contact_handler)
         self.spectrum_btn.clicked.connect(self.spectrum_handler)
+        self.TF_btn.clicked.connect(self.TF_handler)
         self.record_btn.clicked.connect(self.start_recording)
         self.stop_btn.clicked.connect(self.stop_recording)
         self.file_path_select_btn.clicked.connect(self.select_file_path)
@@ -227,11 +229,31 @@ class EEG_Application(QtGui.QApplication):
                 self.spectrum_proc = Popen(['python3', 'fft_plot.py'])
             else:            
                 self.spectrum_proc = Popen(['python', 'fft_plot.py'])
-            self.ws_client.FFT_data_msg.clear()
+            if self.TF_btn.isEnabled():
+                self.ws_client.FFT_data_msg.clear()
+                self.ws_client.send_setting_FFT(True)
             self.ws_client.send_request_FFT()
-            self.ws_client.send_setting_FFT(True)
         except Exception as e:
             self.spectrum_proc.kill()
+            logging.error(str(e))
+    
+    def TF_handler(self):
+        if self.TF_proc:
+            if self.TF_proc.poll() is None:
+                return
+        try:
+            self.TF_btn.setEnabled(False)
+            self.contact_btn.setEnabled(False)        
+            # if os.name is 'posix':
+            #     self.TF_proc = Popen(['python3', 'TF_plot.py'])
+            # else:            
+            #     self.TF_proc = Popen(['python', 'TF_plot.py'])
+            if self.spectrum_btn.isEnabled():
+                self.ws_client.FFT_data_msg.clear()
+                self.ws_client.send_setting_FFT(True)
+            self.ws_client.send_request_FFT()
+        except Exception as e:
+            #self.TF_proc.kill()
             logging.error(str(e))
 
     def start_recording(self):
@@ -272,7 +294,7 @@ class EEG_Application(QtGui.QApplication):
         if self.state == "RECORDING":
             self.record_btn.setEnabled(True)
             #check if other plot or record not running
-            if self.signal_btn.isEnabled() and self.spectrum_btn.isEnabled(): 
+            if self.signal_btn.isEnabled() and self.spectrum_btn.isEnabled() and self.TF_btn.isEnabled(): 
                 self.contact_btn.setEnabled(True)
             self.ws_client.send_setting_raw(False)
             self.time_t.stop()
@@ -300,3 +322,5 @@ class EEG_Application(QtGui.QApplication):
             self.contact_plot_proc.kill()
         if self.spectrum_proc and self.spectrum_proc.poll() is None:
             self.spectrum_proc.kill()
+        if self.TF_proc and self.TF_proc.poll() is None:
+            self.TF_proc.kill()

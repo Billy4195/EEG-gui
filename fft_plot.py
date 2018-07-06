@@ -20,7 +20,7 @@ class Spectrum_Plot(QtGui.QWidget):
             url = "ws://localhost:7777"
 
         #TODO setup ws2
-        self.ws_data = WS_FFT(url=url)
+        self.ws_data = WS_FFT(url=url, plot_name="FFT_PS")
 
         self.setWindowTitle("Power Spectrum(FFT)")
         self.timer_interval = 0.5

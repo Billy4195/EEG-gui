@@ -355,7 +355,8 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         self.ws_client = ws_client
         self.dec_client = None
         self.imp_client = None
-        self.FFT_client = None
+        self.FFT_PS_client = None
+        self.FFT_TF_client = None
 
     def check_origin(self, origin):
         return True
@@ -374,11 +375,16 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
                 self.imp_loop = tornado.ioloop.PeriodicCallback(
                     self.send_imp, 100)
                 self.imp_loop.start()
-            elif cmd["type"] == "FFT":
-                self.FFT_client = self
-                self.FFT_loop = tornado.ioloop.PeriodicCallback(
-                    self.send_FFT, 100)
-                self.FFT_loop.start()
+            elif cmd["type"] == "FFT_PS":
+                self.FFT_PS_client = self
+                if self.FFT_TF_client is None:
+                    self.FFT_loop = tornado.ioloop.PeriodicCallback(self.send_FFT, 100)
+                    self.FFT_loop.start()
+            elif cmd["type"] == "FFT_TF":
+                self.FFT_TF_client = self
+                if self.FFT_PS_client is None:
+                    self.FFT_loop = tornado.ioloop.PeriodicCallback(self.send_FFT, 100)
+                    self.FFT_loop.start()
             else:
                 pass
         except Exception as e:
@@ -388,20 +394,33 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         if self == self.dec_client:
             self.ws_client.send_setting_dec(False)
             self.dec_loop.stop()
+            self.dec_client = None
             self.main_ui.signal_btn.setEnabled(True)
             #check if other plot or record not running
-            if self.main_ui.record_btn.isEnabled() and self.main_ui.spectrum_btn.isEnabled():
+            if self.main_ui.record_btn.isEnabled() and self.main_ui.spectrum_btn.isEnabled() and self.main_ui.TF_btn.isEnabled():
                 self.main_ui.contact_btn.setEnabled(True)
-        elif self == self.FFT_client:
-            self.ws_client.send_setting_FFT(False)
-            self.FFT_loop.stop()
+        elif self == self.FFT_PS_client:
+            if self.FFT_TF_client is None:
+                self.ws_client.send_setting_FFT(False)
+                self.FFT_loop.stop()
+            self.FFT_PS_client = None
             self.main_ui.spectrum_btn.setEnabled(True)
             #check if other plot or record not running
-            if self.main_ui.record_btn.isEnabled() and self.main_ui.signal_btn.isEnabled():
+            if self.main_ui.record_btn.isEnabled() and self.main_ui.signal_btn.isEnabled() and self.main_ui.TF_btn.isEnabled():
+                self.main_ui.contact_btn.setEnabled(True)
+        elif self == self.FFT_TF_client:
+            if self.FFT_PS_client is None:
+                self.ws_client.send_setting_FFT(False)
+                self.FFT_loop.stop()
+            self.FFT_TF_client = None
+            self.main_ui.TF_btn.setEnabled(True)
+            #check if other plot or record not running
+            if self.main_ui.record_btn.isEnabled() and self.main_ui.signal_btn.isEnabled() and self.main_ui.spectrum_btn.isEnabled():
                 self.main_ui.contact_btn.setEnabled(True)
         elif self == self.imp_client:
             self.ws_client.send_setting_imp(False)
             self.imp_loop.stop()
+            self.imp_client = None
             self.main_ui.set_all_button_state(True)
         else:
             logging.error("client identification gg")
@@ -435,7 +454,10 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             try:
                 if self.ws_client.FFT_data_msg:
                     packet = self.ws_client.FFT_data_msg.pop(0)
-                    self.write_message(packet)
+                    if self.FFT_TF_client is not None:
+                        self.FFT_TF_client.write_message(packet)
+                    if self.FFT_PS_client is not None:
+                        self.FFT_PS_client.write_message(packet)
                 else:
                     return
             except Exception as e:

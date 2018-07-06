@@ -77,8 +77,8 @@ class WS_Imp(object):
         pass
 
     def send_init_commands(self):
-        dec_setting_msg = json.dumps({
+        imp_setting_msg = json.dumps({
             "type": "imp"
         })
-        self.ws.send(dec_setting_msg)
+        self.ws.send(imp_setting_msg)
 

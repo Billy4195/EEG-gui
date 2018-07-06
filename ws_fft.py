@@ -12,8 +12,12 @@ from time import sleep
 import websocket
 
 class WS_FFT(object):
-    def __init__(self, url):
+    def __init__(self, url, plot_name):
+        #plot_name: 
+            # "FFT_PS" for Power Spectrum
+            # "FFT_TF" for Time Frequency
         self.url = url
+        self.plot_name = plot_name
         self.FFT_data = list()
         self.tick = 0
         self.ch_label = None
@@ -79,8 +83,8 @@ class WS_FFT(object):
         pass
 
     def send_init_commands(self):
-        dec_setting_msg = json.dumps({
-            "type": "FFT"
+        FFT_setting_msg = json.dumps({
+            "type": self.plot_name
         })
-        self.ws.send(dec_setting_msg)
+        self.ws.send(FFT_setting_msg)
 
