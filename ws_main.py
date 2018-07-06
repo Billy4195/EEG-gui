@@ -366,21 +366,35 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         try:
             cmd = json.loads(message)
             if cmd["type"] == "dec":
+                self.ws_client.decimated_data_msg.clear()
+                self.ws_client.send_request_dec()
+                self.ws_client.send_setting_dec(True)
                 self.dec_client = self
                 self.dec_loop = tornado.ioloop.PeriodicCallback(
                     self.send_dec, 5)
                 self.dec_loop.start()
             elif cmd["type"] == "imp":
+                self.ws_client.impedance_data_msg.clear()
+                self.ws_client.send_request_imp()
+                self.ws_client.send_setting_imp(True)
                 self.imp_client = self
                 self.imp_loop = tornado.ioloop.PeriodicCallback(
                     self.send_imp, 100)
                 self.imp_loop.start()
             elif cmd["type"] == "FFT_PS":
+                if self.FFT_TF_client is None:
+                    self.ws_client.FFT_data_msg.clear()
+                    self.ws_client.send_setting_FFT(True)
+                self.ws_client.send_request_FFT()
                 self.FFT_PS_client = self
                 if self.FFT_TF_client is None:
                     self.FFT_loop = tornado.ioloop.PeriodicCallback(self.send_FFT, 100)
                     self.FFT_loop.start()
             elif cmd["type"] == "FFT_TF":
+                if self.FFT_PS_client is None:
+                    self.ws_client.FFT_data_msg.clear()
+                    self.ws_client.send_setting_FFT(True)
+                self.ws_client.send_request_FFT()
                 self.FFT_TF_client = self
                 if self.FFT_PS_client is None:
                     self.FFT_loop = tornado.ioloop.PeriodicCallback(self.send_FFT, 100)
@@ -396,27 +410,21 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             self.dec_loop.stop()
             self.dec_client = None
             self.main_ui.signal_btn.setEnabled(True)
-            #check if other plot or record not running
-            if self.main_ui.record_btn.isEnabled() and self.main_ui.spectrum_btn.isEnabled() and self.main_ui.TF_btn.isEnabled():
-                self.main_ui.contact_btn.setEnabled(True)
+            self.main_ui.update_contact_btn_state()
         elif self == self.FFT_PS_client:
             if self.FFT_TF_client is None:
                 self.ws_client.send_setting_FFT(False)
                 self.FFT_loop.stop()
             self.FFT_PS_client = None
             self.main_ui.spectrum_btn.setEnabled(True)
-            #check if other plot or record not running
-            if self.main_ui.record_btn.isEnabled() and self.main_ui.signal_btn.isEnabled() and self.main_ui.TF_btn.isEnabled():
-                self.main_ui.contact_btn.setEnabled(True)
+            self.main_ui.update_contact_btn_state()
         elif self == self.FFT_TF_client:
             if self.FFT_PS_client is None:
                 self.ws_client.send_setting_FFT(False)
                 self.FFT_loop.stop()
             self.FFT_TF_client = None
             self.main_ui.TF_btn.setEnabled(True)
-            #check if other plot or record not running
-            if self.main_ui.record_btn.isEnabled() and self.main_ui.signal_btn.isEnabled() and self.main_ui.spectrum_btn.isEnabled():
-                self.main_ui.contact_btn.setEnabled(True)
+            self.main_ui.update_contact_btn_state()
         elif self == self.imp_client:
             self.ws_client.send_setting_imp(False)
             self.imp_loop.stop()
