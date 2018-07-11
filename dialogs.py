@@ -1,6 +1,8 @@
 import pyqtgraph as pg
 from pyqtgraph.dockarea import *
 from PyQt5 import QtCore, QtGui, QtWidgets
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+import matplotlib.pyplot as plt
 import ScaleUI
 
 class CustomizedDialog(QtGui.QDialog):
@@ -137,3 +139,48 @@ class ScaleHandler(CustomizedDialog):
 
     def closeEvent(self, event):
         self.parent.scale_adjust_win = None
+
+class Big_Bar_Plot(CustomizedDialog):
+    def __init__(self, parent, ch_name):
+        super().__init__(parent)
+        self.name = ch_name
+        self.setWindowTitle("{name} Power Band".format(name=self.name))
+        self.init_ui()
+        self.show()
+
+    def init_ui(self):
+        self.fig, self.ax = plt.subplots()
+        self.ax.set_xlabel("Band\n%")
+        self.ax.xaxis.set_label_coords(0, -0.04)
+        self.ax.spines["top"].set_visible(False)
+        self.ax.spines["bottom"].set_visible(False)
+        self.ax.spines["right"].set_visible(False)
+        self.ax.spines["left"].set_visible(False)
+        self.ax.yaxis.grid(True)
+        self.canvas = FigureCanvas(self.fig)
+        grid_layout = QtGui.QGridLayout(self)
+        grid_layout.addWidget(self.canvas)
+        self.resize(500, 500)
+
+    def draw(self, data, color):
+        p_sum = sum(data)
+        labels = ["$\delta$", "$\\theta$", "L-$\\alpha$ ", "H-$\\alpha$", "L-$\\beta$",
+                    "M-$\\beta$", "H-$\\beta$", "$\gamma$"]
+        percentages = ["{:.1f}".format(d/p_sum*100) for d in data]
+        self.ax.cla()
+        # self.ax.set_title("{name} Power Band".format(name=self.name))
+        self.ax.set_ylabel("Power ($uV^2$)")
+        self.ax.bar(list(range(8)), data, color=color)
+        self.ax.set_xlabel("Band\n%")
+        self.ax.xaxis.set_label_coords(0, -0.04)
+        self.ax.set_xticks(list(range(8)))
+        self.ax.set_xticklabels(["{}\n{}".format(label, per) for label, per in zip(labels,percentages)])
+        self.ax.spines["top"].set_visible(False)
+        self.ax.spines["bottom"].set_visible(False)
+        self.ax.spines["right"].set_visible(False)
+        self.ax.spines["left"].set_visible(False)
+        self.ax.yaxis.grid(True)
+        self.fig.canvas.draw()
+
+    def closeEvent(self, event):
+        self.parent.big_plot_closed(self)
