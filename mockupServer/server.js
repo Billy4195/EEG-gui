@@ -437,13 +437,13 @@ class Server {
                 contents: {
                     sync_tick: this.tick,
                     power: Array.from({length: 8}, () => {
-                        return Array.from({length: 8}, () => Math.abs(Math.sin(this.coe)) * 10);
+                        return Array.from({length: 8}, () => Math.random() * 8);
                     }),
                     z_score_all: Array.from({length: 8}, () => {
-                        return Array.from({length: 8}, () => Math.sin(this.coe));
+                        return Array.from({length: 8}, () => Math.random() * 8);
                     }),
                     z_score_each: Array.from({length: 8}, () => {
-                        return Array.from({length: 8}, () => Math.sin(this.coe));
+                        return Array.from({length: 8}, () => Math.random() * 8);
                     }),
                 }                   
             }
