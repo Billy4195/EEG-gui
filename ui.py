@@ -113,7 +113,7 @@ class EEG_Application(QtGui.QApplication):
         self.spectrum_btn = QtGui.QPushButton("Spectrum")
         self.TF_btn = QtGui.QPushButton("Time-Freq.")
         self.bar_btn = QtGui.QPushButton("Bar")
-        self.topo_btn = QtGui.QPushButton("Topographies")
+        self.topo_btn = QtGui.QPushButton("Topographic")
 
         gridlayout = QtGui.QGridLayout()
         gridlayout.addWidget(self.contact_btn, 0, 0, 1, 1)
@@ -136,7 +136,9 @@ class EEG_Application(QtGui.QApplication):
         self.record_btn.setEnabled(operation)
     
     def update_contact_btn_state(self):
-        if self.record_btn.isEnabled() and self.signal_btn.isEnabled() and self.spectrum_btn.isEnabled() and self.TF_btn.isEnabled() and self.bar_btn.isEnabled() and self.topo_btn.isEnabled():
+        if self.record_btn.isEnabled() and self.signal_btn.isEnabled() \
+                and self.spectrum_btn.isEnabled() and self.TF_btn.isEnabled() \
+                and self.bar_btn.isEnabled() and self.topo_btn.isEnabled():
             self.contact_btn.setEnabled(True)
         else:
             self.contact_btn.setEnabled(False)
