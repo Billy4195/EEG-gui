@@ -11,7 +11,6 @@ import tornado.httpserver
 import tornado.ioloop
 import asyncio
 import logging
-import csv
 
 
 class WS_CLIENT(object):
@@ -22,9 +21,9 @@ class WS_CLIENT(object):
         self.raw_data = list()
         self.raw_data_ticks = list()
         self.raw_data_events = list()
-        self.recording_data = False
-        self.record_start_tick = None
-        self.raw_sample_rate = 1000  # TODO ask from web socket
+        self.raw_sample_rate = None
+        self.ch_num = None
+        self.ch_label = list()
 
         self.decimated_data_msg = list()
         self.impedance_data_msg = list()
@@ -57,6 +56,13 @@ class WS_CLIENT(object):
         try:
             raw = json.loads(message)
             if raw["type"]["source_name"] == "device":
+                self.raw_sample_rate = raw["contents"]["sampling_rate"]
+                self.ch_num = raw["contents"]["ch_num"]
+                self.ch_label = raw["contents"]["ch_label"]
+                if raw["contents"]["ch_label"] is None or len(raw["contents"]["ch_label"]) is 0:
+                    for i in range(1, self.ch_num + 1):
+                        self.ch_label.append("Channel_{}".format(i))
+
                 self.main_ui.set_device_info(
                     'mockID', raw["contents"]["sampling_rate"], raw["contents"]["resolution"], raw["contents"]["battery"])
             elif raw["type"]["source_name"] == "raw" and raw["type"]["type"] == "data":
@@ -278,9 +284,8 @@ class WS_CLIENT(object):
         self.ws.send(PB_request_msg)
 
     def add_raw_data(self, data):
-        if self.recording_data:
+        if self.main_ui.current_file is not None:
             contents = data["contents"]
-            # TODO check event is single or multiple
             if isinstance(contents["sync_tick"], list):
                 for eeg, tick, e_id, e_du in zip(contents["eeg"],
                                                  contents["sync_tick"],
@@ -296,84 +301,7 @@ class WS_CLIENT(object):
                 self.raw_data_events.append(contents["event"])
 
             if len(self.raw_data) > self.raw_cache_size:
-                self.write_raw_data_to_file()
-
-    def mkdir_p(self, path):
-        try:
-            os.makedirs(path)
-        except OSError as exc:  # Python >2.5
-            if exc.errno == errno.EEXIST and os.path.isdir(path):
-                pass
-            else:
-                raise
-
-    def safe_open_w(self, path):
-        self.mkdir_p(os.path.dirname(path))
-        return open(path, 'w')
-
-    def open_raw_record_file(self, filename):
-        self.file_pointer = self.safe_open_w(filename)
-        self.csv_writer = csv.writer(self.file_pointer)
-
-        self.raw_data.clear()
-        self.raw_data_ticks.clear()
-        self.raw_data_events.clear()
-        self.recording_data = True
-
-        first_row = list()
-        first_row.append("Time:{}Hz".format(self.raw_sample_rate))
-        first_row.append("Epoch")
-        # TODO chagne to channel name
-        for i in range(1, 65):
-            first_row.append("Channel_{}".format(i))
-        first_row.append("Event ID")
-        first_row.append("Event Date")
-        first_row.append("Event Duration")
-        self.csv_writer.writerow(first_row)
-
-    def write_raw_data_to_file(self):
-        if self.csv_writer is not None:
-            if self.record_start_tick is None:
-                self.record_start_tick = self.raw_data_ticks[0]
-
-            copied_data = self.raw_data[:self.raw_cache_size]
-            self.raw_data = self.raw_data[self.raw_cache_size:]
-
-            copied_ticks = self.raw_data_ticks[:self.raw_cache_size]
-            self.raw_data_ticks = self.raw_data_ticks[self.raw_cache_size:]
-
-            copied_events = self.raw_data_events[:self.raw_cache_size]
-            self.raw_data_events = self.raw_data_events[self.raw_cache_size:]
-
-            assert len(copied_data) == len(copied_ticks)
-            assert len(copied_data) == len(copied_events)
-            for tick, ch_data, events in zip(copied_ticks, copied_data, copied_events):
-                row = list()
-
-                time = (tick - self.record_start_tick) / self.raw_sample_rate
-                epoch = 0
-                event_id = ":".join([str(id) for id in events["event_id"]])
-                event_date = ":".join([str(time) for e in events["event_id"]])
-                event_duration = ":".join([str(duration)
-                                           for duration in events["event_duration"]])
-
-                row.append(time)
-                row.append(epoch)
-                row += ch_data
-                row.append(event_id)
-                row.append(event_date)
-                row.append(event_duration)
-                self.csv_writer.writerow(row)
-
-    def close_raw_record_file(self):
-        self.recording_data = False
-
-        while self.raw_data:
-            self.write_raw_data_to_file()
-
-        self.file_pointer.close()
-        self.file_pointer = None
-        self.csv_writer = None
+                self.main_ui.current_file.write_raw_data_to_file()
 
 
 class WS_SERVER(object):

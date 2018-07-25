@@ -351,7 +351,7 @@ class Server {
                 name: null,
                 contents: {
                     sync_tick: [this.tick, this.tick + 1, this.tick + 2, this.tick + 3],
-                    eeg: Array(4).fill(Array(64).fill(1)),
+                    eeg: Array(4).fill(Array(8).fill(1)),
                     event: {
                         event_id: [
                             [125, 126],

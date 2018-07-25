@@ -17,6 +17,7 @@ import copy
 import os
 from ws_main import WS_CLIENT, WS_SERVER
 from raw_data_plot import Raw_Data_Plot
+from csv_file import CSV_FILE
 import os
 from timer import TimeThread
 
@@ -38,6 +39,8 @@ class EEG_Application(QtGui.QApplication):
         self.setupSignals()
         self.set_all_button_state(False) 
         self.state = "IDLE"
+
+        self.current_file = None
 
     def init_ws(self):
         self.connect_btn.setEnabled(False)
@@ -161,6 +164,8 @@ class EEG_Application(QtGui.QApplication):
         self.file_name_input = QtGui.QLineEdit()
         self.file_type = QtGui.QComboBox()
         self.file_type.addItem(".csv")
+        # self.file_type.addItem(".bdf")
+        # self.file_type.addItem(".edf")
         gridlayout.addWidget(name_label, 1, 0, 1, 2)
         gridlayout.addWidget(self.file_name_input, 1, 2, 1, 2)
         gridlayout.addWidget(self.file_type, 1, 4, 1, 2)
@@ -316,7 +321,12 @@ class EEG_Application(QtGui.QApplication):
                 self.file_name_input.setText(self.file_name_input.text() + "_" + timestamp)
 
             file_path = os.path.join(self.file_path_input.text(), self.file_name_input.text()+self.file_type.currentText())
-            self.ws_client.open_raw_record_file(file_path)
+
+            if self.file_type.currentText() == '.csv':
+                self.current_file = CSV_FILE(filepath=file_path, ws_client=self.ws_client)
+            else:
+                print (self.file_type.currentText())
+
             self.state = "RECORDING"
             self.time_t = TimeThread()
             self.time_t.signal_time.connect(self.update_elapsed_time)
@@ -326,15 +336,17 @@ class EEG_Application(QtGui.QApplication):
 
     def stop_recording(self):
         if self.state == "RECORDING":
-            self.record_btn.setEnabled(True)
             #check if other plot or record not running
-            self.update_contact_btn_state()
             self.ws_client.send_setting_raw(False)
             self.time_t.stop()
             self.state = "IDLE"
             self.record_btn.setText("Start Recording")
             self.file_name_input.setText("")
-            self.ws_client.close_raw_record_file()
+
+            self.current_file.close_raw_record_file()
+            self.current_file = None
+            self.record_btn.setEnabled(True)
+            self.update_contact_btn_state()
         elif self.state == "IDLE":
             pass
 
