@@ -6,3 +6,4 @@ tornado==5.0.2
 matplotlib==2.2.2
 mne==0.16.1
 scipy==1.1.0
+pyedflib==0.1.13

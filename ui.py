@@ -18,6 +18,8 @@ import os
 from ws_main import WS_CLIENT, WS_SERVER
 from raw_data_plot import Raw_Data_Plot
 from csv_file import CSV_FILE
+from edf_file import EDF_FILE
+from bdf_file import BDF_FILE
 import os
 from timer import TimeThread
 
@@ -164,8 +166,8 @@ class EEG_Application(QtGui.QApplication):
         self.file_name_input = QtGui.QLineEdit()
         self.file_type = QtGui.QComboBox()
         self.file_type.addItem(".csv")
-        # self.file_type.addItem(".bdf")
-        # self.file_type.addItem(".edf")
+        self.file_type.addItem(".bdf")
+        self.file_type.addItem(".edf")
         gridlayout.addWidget(name_label, 1, 0, 1, 2)
         gridlayout.addWidget(self.file_name_input, 1, 2, 1, 2)
         gridlayout.addWidget(self.file_type, 1, 4, 1, 2)
@@ -324,8 +326,10 @@ class EEG_Application(QtGui.QApplication):
 
             if self.file_type.currentText() == '.csv':
                 self.current_file = CSV_FILE(filepath=file_path, ws_client=self.ws_client)
-            else:
-                print (self.file_type.currentText())
+            elif self.file_type.currentText() == '.edf':
+                self.current_file = EDF_FILE(filepath=file_path, ws_client=self.ws_client)
+            elif self.file_type.currentText() == '.bdf':
+                self.current_file = BDF_FILE(filepath=file_path, ws_client=self.ws_client)
 
             self.state = "RECORDING"
             self.time_t = TimeThread()
