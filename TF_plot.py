@@ -31,6 +31,7 @@ class Time_Frequency_Plot(QtGui.QWidget):
         self.sub_plot_size = 250
         self.selected_channels = list(range(1, 9))
         self.channel_selector_win = None
+        self.show_plots = list()
 
         self.init_ui()
         self.setup_signal_handler()
@@ -62,8 +63,7 @@ class Time_Frequency_Plot(QtGui.QWidget):
     def update_plot(self):
         # get data from websocket
         if self.ws_data.FFT_data:
-            self.plot.draw(self.ws_data.FFT_data.pop(0), self.ws_data.ticks.pop(0),
-                            self.ws_data.freq_label)
+            self.plot.draw(self.ws_data.FFT_data.pop(0), self.ws_data.ticks.pop(0))
         else:
             pass
 
@@ -99,19 +99,20 @@ class Time_Frequency_Plot(QtGui.QWidget):
             self.plot.plots[i].hide()
             self.plot.ch_labels[i].hide()
 
-        show_plots = list()
+        new_show_plots = list()
         for idx, i in enumerate(self.selected_channels):
             i -= 1
             if idx in range(cur_idx, cur_idx+max_num_plot_in_widget):
-                show_plots.append(i)
+                if self.show_plots and i not in self.show_plots:
+                    self.plot.plots[i].update()
+                new_show_plots.append(i)
                 self.plot.plots[i].show()
                 self.plot.ch_labels[i].show()
                 self.plot.plots[i].setMaximumHeight((plot_widget_height-50) // display_plot_count)
             else:
                 self.plot.ch_labels[i].hide()
                 self.plot.plots[i].hide()
-
-        return show_plots
+        self.show_plots = new_show_plots
 
 
 class Menu_bar(QtGui.QWidget):
@@ -190,10 +191,13 @@ class Spectrogram(QtGui.QWidget):
             grid_layout.addWidget(self.ch_labels[-1], i , 0, 1, 1)
             grid_layout.addWidget(self.plots[-1], i, 1, 1, 20)
 
-    def draw(self, data, tick, freq_labels):
-        # self.parent.update_display_plot_num()
+    def draw(self, data, tick):
         for i in range(8):
-            self.plots[i].draw(data[i], tick)
+            if i in self.parent.show_plots:
+                show = True
+            else:
+                show = False
+            self.plots[i].draw(data[i], tick, show)
 
     def update_scales(self, freq_limit=None, time_scale=None):
         if freq_limit:

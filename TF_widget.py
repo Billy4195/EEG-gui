@@ -32,7 +32,7 @@ class SpectrogramWidget(QtGui.QWidget):
         hlayout.addWidget(self.canvas)
         self.show()
 
-    def draw(self, new_tick_data, tick):
+    def draw(self, new_tick_data, tick, show):
         tick /= 1000
         tick = int(tick)
         
@@ -46,7 +46,10 @@ class SpectrogramWidget(QtGui.QWidget):
 
         self.img_array = np.append(self.img_array, np.array([new_tick_data]).T, axis=1)
         self.tick_array.append(tick)
+        if show:
+            self.update()
 
+    def update(self):
         self.ax.cla()
         if self.tick_array[0] + self.time_scale - self.tick_array[-1]:
             zeros = np.zeros((len(self.img_array),
