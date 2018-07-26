@@ -25,7 +25,7 @@ class Time_Frequency_Plot(QtGui.QWidget):
 
         self.setWindowTitle("Time Freq. (TF)")
         self.timer_interval = 0.5
-        self.time_scale = 600
+        self.time_scale = 30
         self.h_min = 0
         self.h_max = 30
         self.sub_plot_size = 250
@@ -37,7 +37,10 @@ class Time_Frequency_Plot(QtGui.QWidget):
         self.show()
 
     def init_ui(self):
-        self.menu_bar = Menu_bar(self)
+        while self.ws_data.freq_range is None:
+            # wait for init data
+            True
+        self.menu_bar = Menu_bar(self, self.ws_data.freq_range)
         self.plot = Spectrogram(self)
         self.scroll = QtGui.QScrollBar()
         scroll_range = self.ws_data.channel_num - 4
@@ -59,7 +62,8 @@ class Time_Frequency_Plot(QtGui.QWidget):
     def update_plot(self):
         # get data from websocket
         if self.ws_data.FFT_data:
-            self.plot.draw(self.ws_data.FFT_data.pop(0), self.ws_data.ticks.pop(0))
+            self.plot.draw(self.ws_data.FFT_data.pop(0), self.ws_data.ticks.pop(0),
+                            self.ws_data.freq_label)
         else:
             pass
 
@@ -95,9 +99,11 @@ class Time_Frequency_Plot(QtGui.QWidget):
             self.plot.plots[i].hide()
             self.plot.ch_labels[i].hide()
 
+        show_plots = list()
         for idx, i in enumerate(self.selected_channels):
             i -= 1
             if idx in range(cur_idx, cur_idx+max_num_plot_in_widget):
+                show_plots.append(i)
                 self.plot.plots[i].show()
                 self.plot.ch_labels[i].show()
                 self.plot.plots[i].setMaximumHeight((plot_widget_height-50) // display_plot_count)
@@ -105,16 +111,18 @@ class Time_Frequency_Plot(QtGui.QWidget):
                 self.plot.ch_labels[i].hide()
                 self.plot.plots[i].hide()
 
+        return show_plots
+
 
 class Menu_bar(QtGui.QWidget):
-    def __init__(self, parent):
+    def __init__(self, parent, freq_range):
         super().__init__()
         self.parent = parent
-        self.init_ui()
+        self.init_ui(freq_range)
         self.setup_signal_handler()
         self.show()
 
-    def init_ui(self):
+    def init_ui(self, freq_range):
         self.group_box = QtGui.QGroupBox("Scale Parameters")
         self.time_scale_label = QtWidgets.QLabel("Time Scale")
         self.time_scale_selector = QtGui.QSpinBox()
@@ -122,11 +130,13 @@ class Menu_bar(QtGui.QWidget):
         self.time_scale_selector.setValue(self.parent.time_scale)
         self.h_min_label = QtWidgets.QLabel("Min Frequency")
         self.min_spin = QtGui.QSpinBox()
-        self.min_spin.setMinimum(0)
+        self.min_spin.setMinimum(freq_range[0])
+        self.min_spin.setMaximum(freq_range[1])
         self.min_spin.setValue(self.parent.h_min)
         self.h_max_label = QtWidgets.QLabel("Max Frequency")
         self.max_spin = QtGui.QSpinBox()
-        self.max_spin.setMaximum(20000)
+        self.max_spin.setMinimum(freq_range[0])
+        self.max_spin.setMaximum(freq_range[1])
         self.max_spin.setValue(self.parent.h_max)
         self.ch_select_btn = QtGui.QPushButton("Select Channels")
         self.ch_select_btn.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
@@ -155,6 +165,8 @@ class Menu_bar(QtGui.QWidget):
         self.parent.time_scale = int(self.time_scale_selector.text())
         self.parent.h_min = self.min_spin.value()
         self.parent.h_max = self.max_spin.value()
+        self.parent.plot.update_scales(freq_limit=(self.parent.h_min, self.parent.h_max),
+                                    time_scale=self.parent.time_scale)
         self.parent.update_plot()
 
 class Spectrogram(QtGui.QWidget):
@@ -170,17 +182,29 @@ class Spectrogram(QtGui.QWidget):
         self.ch_labels = list()
         while(self.parent.ws_data.ch_label is None): True
         for i in range(8):
-            self.plots.append(SpectrogramWidget())
+            self.plots.append(SpectrogramWidget((self.parent.h_min, self.parent.h_max),
+                                                    self.parent.time_scale,
+                                                    self.parent.ws_data.freq_label))
             ch_name = self.parent.ws_data.ch_label[i]
             self.ch_labels.append(QtGui.QLabel(ch_name))
             grid_layout.addWidget(self.ch_labels[-1], i , 0, 1, 1)
             grid_layout.addWidget(self.plots[-1], i, 1, 1, 20)
 
-    def draw(self, data, tick):
+    def draw(self, data, tick, freq_labels):
+        # self.parent.update_display_plot_num()
         for i in range(8):
             self.plots[i].draw(data[i], tick)
 
-        self.parent.update_display_plot_num()
+    def update_scales(self, freq_limit=None, time_scale=None):
+        if freq_limit:
+            for i in range(8):
+                self.plots[i].set_freq_limit((self.parent.h_min, self.parent.h_max))
+
+        if time_scale:
+            for i in range(8):
+                self.plots[i].time_scale = time_scale
+
+
 
 if __name__ == "__main__":
     app = QtGui.QApplication([])

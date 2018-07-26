@@ -22,6 +22,7 @@ class WS_FFT(object):
         self.ticks = list()
         self.ch_label = None
         self.channel_num = None
+        self.freq_range = None
 
         self.ws = websocket.WebSocketApp(url,
                                     on_message = self.on_message,
