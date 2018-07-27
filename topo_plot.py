@@ -48,19 +48,16 @@ class Topo_Plot(QtGui.QWidget):
         if self.ws_data.power_data:
             power_data = self.ws_data.power_data.pop(0)
             if self.display_type == "power":
-                print("power")
                 self.topo_widget.draw(power_data, self.ws_data.ch_label)
 
         if self.ws_data.z_all_data:
             z_all = self.ws_data.z_all_data.pop(0)
             if self.display_type == "z_all":
-                print("z_all")
                 self.topo_widget.draw(z_all, self.ws_data.ch_label)
 
         if self.ws_data.z_each_data:
             z_each = self.ws_data.z_each_data.pop(0)
             if self.display_type == "z_each":
-                print("z_each")
                 self.topo_widget.draw(z_each, self.ws_data.ch_label)
 
 if __name__ == "__main__":
