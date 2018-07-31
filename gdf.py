@@ -66,8 +66,14 @@ class GDF(object):
         return (tmp).to_bytes(3, byteorder=sys.byteorder, signed=True)
     
     def writeSamples(self, samples):
-        self.record_num += len(samples)
-        contents = list(chain.from_iterable(samples))
+        if len(samples) != 1000:
+            # last call, may < 1000 => abort
+            # print (len(samples))
+            return
+        
+        self.record_num += 1
+        transpose_data = list(map(list, zip(*samples)))
+        contents = list(chain.from_iterable(transpose_data))
         contents = [self.convert_to_int24_bytes(x) for x in contents]
         contents = b''.join(contents)
         self.fout.write(contents)
