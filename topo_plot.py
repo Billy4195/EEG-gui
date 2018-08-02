@@ -25,6 +25,8 @@ class Topo_Plot(QtGui.QWidget):
         self.timer_interval = 0.5
         self.ch_loc = True
         self.display_type = "power"
+        self.init_tick = None
+        self.cur_tick = None
 
         self.init_ui()
         self.setup_signal_handler()
@@ -45,6 +47,26 @@ class Topo_Plot(QtGui.QWidget):
         self.timer.start()
 
     def draw(self):
+        if self.init_tick is None and self.ws_data.ticks:
+            self.init_tick = self.ws_data.ticks[0]
+            self.cur_tick = self.init_tick
+
+        # Delete outdated
+        count = 0
+        if self.cur_tick:
+            self.cur_tick += 500
+
+            for tick in self.ws_data.ticks:
+                if tick <= self.cur_tick + 250:
+                    count += 1
+
+        while count > 1:
+            self.ws_data.ticks.pop(0)
+            self.ws_data.power_data.pop(0)
+            self.ws_data.z_all_data.pop(0)
+            self.ws_data.z_each_data.pop(0)
+            count -= 1
+
         if self.ws_data.power_data:
             power_data = self.ws_data.power_data.pop(0)
             if self.display_type == "power":
@@ -59,6 +81,10 @@ class Topo_Plot(QtGui.QWidget):
             z_each = self.ws_data.z_each_data.pop(0)
             if self.display_type == "z_each":
                 self.topo_widget.draw(z_each, self.ws_data.ch_label)
+
+        if self.ws_data.ticks:
+            tick = self.ws_data.ticks.pop(0)
+
 
 if __name__ == "__main__":
     app = QtGui.QApplication([])

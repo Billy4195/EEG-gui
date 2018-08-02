@@ -36,6 +36,8 @@ class Bar_Plot(QtGui.QWidget):
 
         self.num_color = 8
         self.big_plots = [None] * len(self.ws_data.ch_label)
+        self.init_tick = None
+        self.cur_tick = None
 
         self.init_ui()
         self.setup_signal_handler()
@@ -101,8 +103,28 @@ class Bar_Plot(QtGui.QWidget):
                 self.big_plots[idx] = None
 
     def draw(self):
+        if self.init_tick is None and self.ws_data.ticks:
+            self.init_tick = self.ws_data.ticks[0]
+            self.cur_tick = self.init_tick
+
+        # Delete outdated
+        count = 0
+        if self.cur_tick:
+            self.cur_tick += 500
+
+            for tick in self.ws_data.ticks:
+                if tick <= self.cur_tick + 250:
+                    count += 1
+
+        while count > 1:
+            self.ws_data.ticks.pop(0)
+            self.ws_data.power_data.pop(0)
+            self.ws_data.z_all_data.pop(0)
+            self.ws_data.z_each_data.pop(0)
+            count -= 1
+
         if self.ws_data.power_data:
-            ch_data = self.ws_data.power_data.pop()
+            ch_data = self.ws_data.power_data.pop(0)
             for idx, data in enumerate(ch_data):
                 color = [self.cmap(self.norm(i)) for i in range(8)]
                 self.axes[idx+1].cla()
@@ -116,6 +138,9 @@ class Bar_Plot(QtGui.QWidget):
                 if self.big_plots[idx] != None:
                     self.big_plots[idx].draw(data, color)
             self.fig.canvas.draw()
+
+        if self.ws_data.ticks:
+            tick = self.ws_data.ticks.pop(0)
 
 if __name__ == "__main__":
     app = QtGui.QApplication([])
