@@ -114,17 +114,17 @@ class Server {
                 if (this.clientState.FFT.stream) {
                     ws.send(JSON.stringify(this.genPacket("FFT")));
                 }
-                setTimeout(sendFFT, 1000);
+                setTimeout(sendFFT, 500);
             }
-            setTimeout(sendFFT, 1000);
+            setTimeout(sendFFT, 500);
 
             const sendPowerBand = () => {
                 if (this.clientState.powerBand.stream) {
                     ws.send(JSON.stringify(this.genPacket("PowerBand")));
                 }
-                setTimeout(sendPowerBand, 1000);
+                setTimeout(sendPowerBand, 500);
             }
-            setTimeout(sendPowerBand, 1000);
+            setTimeout(sendPowerBand, 500);
         });
     }
     processMsg(ws, msg) {
