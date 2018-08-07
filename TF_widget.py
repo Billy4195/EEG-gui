@@ -34,13 +34,14 @@ class SpectrogramWidget(QtGui.QWidget):
 
     def draw(self, new_tick_data, tick, show):
         tick /= 1000
-        tick = int(tick)
+        tick = tick
         
         if self.img_array is None:
             self.img_array = np.array([new_tick_data]).T
             self.tick_array = [tick]
             self.init_tick = tick
-        while self.tick_array[0] <= self.tick_array[-1] - self.time_scale :
+
+        while self.tick_array[0] <= self.tick_array[-1] - self.time_scale:
             self.img_array = self.img_array[:, 1:]
             self.tick_array.pop(0)
 
@@ -51,17 +52,13 @@ class SpectrogramWidget(QtGui.QWidget):
 
     def update(self):
         self.ax.cla()
-        if self.tick_array[0] + self.time_scale - self.tick_array[-1]:
-            zeros = np.zeros((len(self.img_array),
-                                self.tick_array[0] + self.time_scale - self.tick_array[-1] ))
-            img = np.append(self.img_array, zeros, axis=1)
-        else:
-            img = self.img_array
+        img = self.img_array
 
-        self.ax.imshow(img, cmap="Spectral_r", norm=self.norm)
+        t = self.ax.imshow(img, cmap="Spectral_r", norm=self.norm)
         self.ax.invert_yaxis()
+        self.ax.set_xlim(0, self.time_scale*2)
         ticks = self.ax.get_xticks()
-        labels = [str(self.init_tick + tick) for tick in ticks]
+        labels = [str(self.tick_array[int(tick)]) for tick in ticks if tick < len(self.tick_array)]
         self.ax.set_xticklabels(labels)
         for idx, label in enumerate(self.freq_labels):
             if label <= self.min_freq:
@@ -75,8 +72,9 @@ class SpectrogramWidget(QtGui.QWidget):
         y_ticks = self.ax.get_yticks()
         y_labels = [self.freq_labels[int(i)] for i in y_ticks]
         self.ax.set_yticklabels(y_labels)
-        
-        self.ax.set_xmargin(0)
+
+        self.ax.set_aspect("auto")
+        self.fig.tight_layout()
         self.fig.canvas.draw()
 
     def set_freq_limit(self, freq_limit):
