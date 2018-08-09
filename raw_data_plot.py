@@ -160,6 +160,9 @@ class Raw_Data_Plot(QtGui.QWidget):
 
             self.curves[i].setData(plot_data.time_data, plot_data.channel_data[i])
         
+        while len(plot_data.trans_events) > 20:
+            plot_data.trans_events.pop(0)
+        
         for idx in range(len(plot_data.trans_events)):
             self.event_lines[idx].setValue(plot_data.trans_events[idx]['time'])
             self.event_lines[idx].show()
