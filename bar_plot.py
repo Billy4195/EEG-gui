@@ -142,6 +142,13 @@ class Bar_Plot(QtGui.QWidget):
         if self.ws_data.ticks:
             tick = self.ws_data.ticks.pop(0)
 
+        if self.ws_data.z_all_data:
+            z_all = self.ws_data.z_all_data.pop(0)
+
+        if self.ws_data.z_each_data:
+            z_each = self.ws_data.z_each_data.pop(0)
+
+
 if __name__ == "__main__":
     app = QtGui.QApplication([])
     plot = Bar_Plot()

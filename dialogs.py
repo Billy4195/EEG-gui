@@ -184,3 +184,5 @@ class Big_Bar_Plot(CustomizedDialog):
 
     def closeEvent(self, event):
         self.parent.big_plot_closed(self)
+        self.close()
+
