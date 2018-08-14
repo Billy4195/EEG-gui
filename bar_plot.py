@@ -18,6 +18,7 @@ from channel_loca_dict import channel_dict_2D
 from ws_pb import WS_PB
 import time
 from dialogs import Big_Bar_Plot
+import gc
 
 
 class Bar_Plot(QtGui.QWidget):
@@ -147,6 +148,8 @@ class Bar_Plot(QtGui.QWidget):
 
         if self.ws_data.z_each_data:
             z_each = self.ws_data.z_each_data.pop(0)
+
+        gc.collect()
 
 
 if __name__ == "__main__":

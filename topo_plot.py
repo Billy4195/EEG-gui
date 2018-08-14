@@ -9,6 +9,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 from ws_pb import WS_PB
 from topo_widget import TopographicWidget, Menu_Bar
+import gc
 
 
 class Topo_Plot(QtGui.QWidget):
@@ -84,6 +85,8 @@ class Topo_Plot(QtGui.QWidget):
 
         if self.ws_data.ticks:
             tick = self.ws_data.ticks.pop(0)
+
+        gc.collect()
 
 
 if __name__ == "__main__":
