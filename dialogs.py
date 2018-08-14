@@ -9,6 +9,7 @@ class CustomizedDialog(QtGui.QDialog):
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
+        self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.resize(500,400)
 
     def closeEvent(self, event):
@@ -73,6 +74,7 @@ class ChannelSelector(CustomizedDialog):
 
     def closeEvent(self, event):
         self.parent.channel_selector_win = None
+        self.close()
 
 class EventTable(CustomizedDialog):
     def __init__(self, parent):
@@ -104,6 +106,7 @@ class EventTable(CustomizedDialog):
 
     def closeEvent(self, event):
         self.parent.event_table_win = None
+        self.close()
 
 class ScaleHandler(CustomizedDialog):
     def __init__(self, parent):
@@ -139,6 +142,7 @@ class ScaleHandler(CustomizedDialog):
 
     def closeEvent(self, event):
         self.parent.scale_adjust_win = None
+        self.close()
 
 class Big_Bar_Plot(CustomizedDialog):
     def __init__(self, parent, ch_name):
@@ -149,6 +153,7 @@ class Big_Bar_Plot(CustomizedDialog):
         self.show()
 
     def init_ui(self):
+        print("DELETE on close", self.testAttribute(QtCore.Qt.WA_DeleteOnClose))
         self.fig, self.ax = plt.subplots()
         self.ax.set_xlabel("Band\n%")
         self.ax.xaxis.set_label_coords(0, -0.04)
@@ -185,4 +190,5 @@ class Big_Bar_Plot(CustomizedDialog):
     def closeEvent(self, event):
         self.parent.big_plot_closed(self)
         self.close()
+        plt.close()
 
