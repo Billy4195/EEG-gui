@@ -16,6 +16,7 @@ class TopographicWidget(QtGui.QWidget):
 
         self.parent = parent
         self.fig, self.axes = plt.subplots(2, 4)
+        self.plots = list()
         self.colorbar_ax = self.fig.add_subplot(2, 5, 5)
         self.cmap = 'RdBu_r'
         self.norm = mpl.colors.Normalize(vmin=0, vmax=100)
@@ -51,18 +52,42 @@ class TopographicWidget(QtGui.QWidget):
         for idx in range(8):
             x_idx = idx // 4
             y_idx = idx % 4
-            self.axes[x_idx][y_idx].cla()
-            self.axes[x_idx][y_idx].set_title(self.titles[idx])
-            if self.parent.ch_loc:
-                marker = "."
-            else:
-                marker = ""
+            if len(self.plots) <= idx:
+                self.axes[x_idx][y_idx].set_title(self.titles[idx])
+                if self.parent.ch_loc:
+                    marker = "."
+                else:
+                    marker = ""
 
-            mne.viz.plot_topomap(data[idx], ch_pos, axes=self.axes[x_idx][y_idx], contours=10,
-                                show=False, mask=mask, mask_params=dict(marker=marker),
-                                head_pos=dict(center=center, scale=scale*1.1), cmap="RdBu_r",
-                                names=ch_label, show_names=self.parent.ch_loc)
-        self.colorbar_ax.set_position([0.9, 0.04, 0.03, 0.15])
+                im, cont, interp = mne.viz.topomap._plot_topomap(data[idx], ch_pos,
+                                    axes=self.axes[x_idx][y_idx], contours=10,
+                                    show=False, mask=mask, mask_params=dict(marker=marker),
+                                    head_pos=dict(center=center, scale=scale*1.1), cmap="RdBu_r",
+                                    names=ch_label, show_names=self.parent.ch_loc)
+
+                self.colorbar_ax.set_position([0.9, 0.04, 0.03, 0.15])
+                self.plots.append([im, cont, interp])
+            else:
+                im, cont, interp = self.plots[idx]
+                Zi = interp.set_values(data[idx])()
+                im.set_data(Zi)
+                # must be removed and re-added
+                if len(cont.collections) > 0:
+                    tp = cont.collections[0]
+                    visible = tp.get_visible()
+                    patch_ = tp.get_clip_path()
+                    color = tp.get_color()
+                    lw = tp.get_linewidth()
+                for tp in cont.collections[:]:
+                    tp.remove()
+                cont = self.axes[x_idx][y_idx].contour(interp.Xi, interp.Yi, Zi, 10,
+                                colors=color, linewidths=lw)
+                for tp in cont.collections:
+                    tp.set_visible(visible)
+                    tp.set_clip_path(patch_)
+
+                self.plots[idx][1] = cont
+                self.plots[idx][2] = interp
         self.fig.canvas.draw()
 
     def update_color_bar(self, scale_min, scale_max):
