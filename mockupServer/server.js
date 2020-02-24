@@ -2,7 +2,7 @@
 __author__ = "kirintw and Billy Su"
 __license__ = "GPL-2.0"
 */
-const wsServer = require("uws").Server;
+const uws = require("uWebSockets.js");
 
 class Server {
     constructor() {
@@ -14,7 +14,7 @@ class Server {
         //serverParams: { spsOrigin(Number), chNum(Number), chLabel(array) }
         this.clientState = this.initClientState(4, 4);
         this.mockLoop();
-        this.wss = this.initServer();
+        this.server = this.initServer();
         this.wsHandler();
     }
     mockLoop() {
@@ -65,66 +65,66 @@ class Server {
         };
     }
     initServer() {
-        let wss = new wsServer({ port: this.port }, () => {
+        const server = uws.App().listen(this.port,() => {
             console.log(`Server is up on ${this.port}`);
         });
-        return wss;
+        return server;
     }
     wsHandler() {
-        this.wss.on("connection", (ws) => {
-            console.log("Client Connected");
-
-            ws.on("message", (msg) => {
+        this.server.ws('/*', {
+            /* For brevity we skip the other events */
+            message: (ws, message, isBinary) => {
                 this.processMsg(ws, JSON.parse(msg));
-            });
-            ws.on("close", () => {
+            },
+            close: (ws) => {
                 console.log("Client Disconnect");
                 this.clientState.raw.stream = false;
                 this.clientState.decimation.stream = false;
                 this.clientState.impedance.stream = false;
                 this.clientState.FFT.stream = false;
                 this.clientState.powerBand.stream = false;
-            });
-
-            const sendDecimate = () => {
-                if (this.clientState.decimation.stream) {
-                    ws.send(JSON.stringify(this.genPacket("DEC")));
+            },
+            open: (ws, req) => {
+                const sendDecimate = () => {
+                    if (this.clientState.decimation.stream) {
+                        ws.send(JSON.stringify(this.genPacket("DEC")));
+                    }
+                    setTimeout(sendDecimate, this.clientState.decimation.decimateNum);
                 }
                 setTimeout(sendDecimate, this.clientState.decimation.decimateNum);
-            }
-            setTimeout(sendDecimate, this.clientState.decimation.decimateNum);
-
-            const sendRaw = () => {
-                if (this.clientState.raw.stream) {
-                    ws.send(JSON.stringify(this.genPacket("RAW")));
+    
+                const sendRaw = () => {
+                    if (this.clientState.raw.stream) {
+                        ws.send(JSON.stringify(this.genPacket("RAW")));
+                    }
+                    setTimeout(sendRaw, this.clientState.raw.chunkSize);
                 }
                 setTimeout(sendRaw, this.clientState.raw.chunkSize);
-            }
-            setTimeout(sendRaw, this.clientState.raw.chunkSize);
-
-            const sendImpedance = () => {
-                if (this.clientState.impedance.stream) {
-                    ws.send(JSON.stringify(this.genPacket("IMP")));
+    
+                const sendImpedance = () => {
+                    if (this.clientState.impedance.stream) {
+                        ws.send(JSON.stringify(this.genPacket("IMP")));
+                    }
+                    setTimeout(sendImpedance, 2000);
                 }
                 setTimeout(sendImpedance, 2000);
-            }
-            setTimeout(sendImpedance, 2000);
-
-            const sendFFT = () => {
-                if (this.clientState.FFT.stream) {
-                    ws.send(JSON.stringify(this.genPacket("FFT")));
+    
+                const sendFFT = () => {
+                    if (this.clientState.FFT.stream) {
+                        ws.send(JSON.stringify(this.genPacket("FFT")));
+                    }
+                    setTimeout(sendFFT, 500);
                 }
                 setTimeout(sendFFT, 500);
-            }
-            setTimeout(sendFFT, 500);
-
-            const sendPowerBand = () => {
-                if (this.clientState.powerBand.stream) {
-                    ws.send(JSON.stringify(this.genPacket("PowerBand")));
+    
+                const sendPowerBand = () => {
+                    if (this.clientState.powerBand.stream) {
+                        ws.send(JSON.stringify(this.genPacket("PowerBand")));
+                    }
+                    setTimeout(sendPowerBand, 500);
                 }
                 setTimeout(sendPowerBand, 500);
-            }
-            setTimeout(sendPowerBand, 500);
+            },
         });
     }
     processMsg(ws, msg) {
