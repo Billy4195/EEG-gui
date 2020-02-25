@@ -73,7 +73,7 @@ class Server {
     wsHandler() {
         this.server.ws('/*', {
             /* For brevity we skip the other events */
-            message: (ws, message, isBinary) => {
+            message: (ws, msg, isBinary) => {
                 this.processMsg(ws, JSON.parse(msg));
             },
             close: (ws) => {
