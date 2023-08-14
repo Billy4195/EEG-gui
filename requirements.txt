@@ -2,7 +2,7 @@ PyQt5==5.10
 PyQtChart==5.10
 git+https://github.com/pyqtgraph/pyqtgraph.git@3d3d0a2#egg=pyqtgraph
 websocket-client==0.47.0
-tornado==6.3.2
+tornado==6.3.3
 matplotlib==2.2.2
 mne==0.16.1
 scipy==1.10.0
